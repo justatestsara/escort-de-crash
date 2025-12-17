@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+:root {
+  --font-header: 'Montserrat', sans-serif;
+  --font-body: 'Open Sans', sans-serif;
+}
+
+html {
+  font-family: var(--font-body);
+}
+
+/* Dark mode (default) */
+.dark {
+  --bg-primary: #000000;
+  --bg-secondary: #111111;
+  --bg-tertiary: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --border-primary: #374151;
+  --border-secondary: #4b5563;
+  --accent-pink: #f472b6;
+  --accent-red: #ef4444;
+  --header-color: #f472b6;
+  --filter-bg: #111111;
+  --filter-border: #374151;
+  --filter-text: #ffffff;
+  --profile-border: #ef4444;
+  --filter-button-bg: #1a1a1a;
+  --filter-button-text: #d1d5db;
+  --filter-button-border: #374151;
+  --filter-button-active-bg: #f472b6;
+  --filter-button-active-text: #ffffff;
+}
+
+/* Light mode with warm colors */
+.light {
+  --bg-primary: #faf8f5;
+  --bg-secondary: #f5f1eb;
+  --bg-tertiary: #ede8e0;
+  --text-primary: #2d1b0e;
+  --text-secondary: #5c4a3a;
+  --text-tertiary: #8b7355;
+  --border-primary: #d4c4b0;
+  --border-secondary: #c9b8a3;
+  --accent-pink: #d97757;
+  --accent-red: #dc6b47;
+  --header-color: #dc2626;
+  --filter-bg: #ede8e0;
+  --filter-border: #c9b8a3;
+  --filter-text: #2d1b0e;
+  --profile-border: #f8c8d8;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.font-header {
+  font-family: var(--font-header), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.font-body {
+  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+

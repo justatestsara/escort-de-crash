@@ -1,0 +1,84 @@
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import HomeClient, { type Model } from '../../../components/HomeClient'
+import { getApprovedAds } from '../../../../lib/supabase-ads'
+import { slugToGender, unslugifyTitle } from '../../../../lib/seo-slugs'
+
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+
+function genderLabelEn(g: NonNullable<ReturnType<typeof slugToGender>>): string {
+  switch (g) {
+    case 'female':
+      return 'Girls'
+    case 'male':
+      return 'Guys'
+    case 'trans':
+      return 'Trans'
+    case 'luxury_escort':
+      return 'Luxury/High End'
+    case 'webcam':
+      return 'Webcam'
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { gender: string; country: string; city?: string[] }
+}): Promise<Metadata> {
+  const gender = slugToGender(params.gender)
+  if (!gender) return { title: 'Featured Models', robots: { index: false, follow: false } }
+
+  const country = unslugifyTitle(params.country)
+  const city = params.city?.length ? unslugifyTitle(params.city.join('-')) : ''
+  const location = city || country
+  const canonical = city ? `/${params.gender}/${params.country}/${params.city!.join('/')}` : `/${params.gender}/${params.country}`
+
+  const title = `${genderLabelEn(gender)} Escorts ${location}`
+  const description = `Browse ${genderLabelEn(gender)} escorts in ${location}. Verified profiles with photos, rates, and contact information.`
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: 'website',
+    },
+  }
+}
+
+export default async function Page({
+  params,
+}: {
+  params: { gender: string; country: string; city?: string[] }
+}) {
+  const gender = slugToGender(params.gender)
+  if (!gender) notFound()
+
+  const country = unslugifyTitle(params.country)
+  const city = params.city?.length ? unslugifyTitle(params.city.join('-')) : ''
+
+  const ads = await getApprovedAds()
+  const models: Model[] = (ads || []).map((ad: any) => {
+    const fallbackImage = 'https://i.ibb.co/GQPtQvJB/image.jpg'
+    const images = ad.images && ad.images.length > 0 ? ad.images : [fallbackImage]
+
+    return {
+      id: ad.id,
+      name: ad.name,
+      age: typeof ad.age === 'string' ? parseInt(ad.age, 10) : ad.age,
+      gender: ad.gender,
+      city: ad.city,
+      country: ad.country,
+      image: images[0],
+      images,
+      description: ad.description,
+    }
+  })
+
+  return <HomeClient initialModels={models} initialFilters={{ gender, country, city }} />
+}
