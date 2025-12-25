@@ -24,6 +24,13 @@ export default function Footer() {
             >
               Impressum
             </Link>
+            <span className="text-[var(--text-tertiary)]">|</span>
+            <Link
+              href="/blog"
+              className="text-[var(--text-primary)] hover:text-[var(--text-secondary)] transition-colors underline"
+            >
+              Blog
+            </Link>
           </div>
           <p>{t('footer.copyright')}</p>
         </div>
