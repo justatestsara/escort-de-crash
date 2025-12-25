@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -13,6 +13,8 @@ import {
   updateContactSubmission,
 } from '../../../lib/supabase-ads'
 import type { Ad, ContactSubmission } from '../../../lib/supabase-ads'
+
+type GenderFilter = 'all' | Ad['gender']
 
 function safeUuid(): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,6 +44,7 @@ async function fileToWebpBlob(file: File): Promise<Blob> {
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
+
     const ctx = canvas.getContext('2d')
     if (!ctx) return file
     ctx.drawImage(img, 0, 0, width, height)
@@ -60,12 +63,37 @@ function formatDate(iso: string): string {
   return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`
 }
 
+function Thumbnails({ images, name }: { images?: string[] | null; name: string }) {
+  if (!images || images.length === 0) {
+    return (
+      <div className="w-32 aspect-[3/4] flex items-center justify-center rounded bg-[var(--bg-tertiary)] text-xs text-[var(--text-tertiary)]">
+        No image
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-shrink-0">
+      <div className="grid grid-cols-2 gap-2 w-32">
+        {images.slice(0, 4).map((img, idx) => (
+          <div key={img + idx} className="aspect-[3/4] overflow-hidden rounded bg-[var(--bg-tertiary)]">
+            <img src={img} alt={`${name} ${idx + 1}`} className="w-full h-full object-cover" />
+          </div>
+        ))}
+      </div>
+      {images.length > 4 && <p className="text-xs text-[var(--text-tertiary)] mt-2 text-center">+{images.length - 4} more</p>}
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
 
   const [ads, setAds] = useState<Ad[]>([])
   const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>([])
   const [loading, setLoading] = useState(true)
+
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>('all')
 
   const [editingAd, setEditingAd] = useState<Ad | null>(null)
   const [editFormData, setEditFormData] = useState<Partial<Ad>>({})
@@ -76,6 +104,27 @@ export default function AdminDashboard() {
   const pendingAds = useMemo(() => ads.filter((a) => a.status === 'pending'), [ads])
   const approvedAds = useMemo(() => ads.filter((a) => a.status === 'approved'), [ads])
   const inactiveAds = useMemo(() => ads.filter((a) => a.status === 'inactive'), [ads])
+
+  const genderCounts = useMemo(() => {
+    const counts: Record<GenderFilter, number> = {
+      all: ads.length,
+      female: 0,
+      male: 0,
+      trans: 0,
+      luxury_escort: 0,
+      webcam: 0,
+    }
+    for (const a of ads) counts[a.gender] = (counts[a.gender] || 0) + 1
+    return counts
+  }, [ads])
+
+  const matchesGender = useMemo(() => {
+    return (ad: Ad) => (genderFilter === 'all' ? true : ad.gender === genderFilter)
+  }, [genderFilter])
+
+  const filteredPendingAds = useMemo(() => pendingAds.filter(matchesGender), [pendingAds, matchesGender])
+  const filteredApprovedAds = useMemo(() => approvedAds.filter(matchesGender), [approvedAds, matchesGender])
+  const filteredInactiveAds = useMemo(() => inactiveAds.filter(matchesGender), [inactiveAds, matchesGender])
 
   const pendingContacts = useMemo(() => contactSubmissions.filter((c) => c.status === 'pending'), [contactSubmissions])
   const reviewedContacts = useMemo(() => contactSubmissions.filter((c) => c.status === 'reviewed'), [contactSubmissions])
@@ -106,7 +155,6 @@ export default function AdminDashboard() {
       router.push('/adm2211')
       return
     }
-
     void loadAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
@@ -117,30 +165,15 @@ export default function AdminDashboard() {
   }
 
   const updateAdStatus = async (adId: string, status: Ad['status']) => {
-    try {
-      const result = await updateAd(adId, { status })
-      if (!result) {
-        alert('Failed to update ad status. Check console. If you see ERR_BLOCKED_BY_CLIENT, disable adblock/extension.')
-        return
-      }
-      await loadAll()
-    } catch (err: any) {
-      console.error('Error updating ad status:', err)
-      if (err?.message?.includes('Failed to fetch') || err?.name === 'TypeError') {
-        alert('Network request was blocked (often ad blockers/extensions). Try incognito or disable extensions.')
-      } else {
-        alert('Error updating ad status. Check console (F12).')
-      }
-    }
+    const result = await updateAd(adId, { status })
+    if (!result) return
+    await loadAll()
   }
 
   const handleDeleteAd = async (adId: string) => {
     if (!confirm('Are you sure you want to delete this ad?')) return
     const success = await deleteAdFromSupabase(adId)
-    if (!success) {
-      alert('Failed to delete ad. Please try again.')
-      return
-    }
+    if (!success) return
     setAds((prev) => prev.filter((a) => a.id !== adId))
   }
 
@@ -162,16 +195,10 @@ export default function AdminDashboard() {
 
   const saveEdit = async () => {
     if (!editingAd) return
-
     const updates: Partial<Ad> = { ...editFormData }
     if (typeof updates.age === 'number') updates.age = String(updates.age)
-
     const result = await updateAd(editingAd.id, updates)
-    if (!result) {
-      alert('Failed to save changes. Please try again (check console).')
-      return
-    }
-
+    if (!result) return
     await loadAll()
     setEditingAd(null)
     setEditFormData({})
@@ -186,10 +213,7 @@ export default function AdminDashboard() {
   const deleteContact = async (id: string) => {
     if (!confirm('Delete this contact message?')) return
     const ok = await deleteContactSubmission(id)
-    if (!ok) {
-      alert('Failed to delete contact submission.')
-      return
-    }
+    if (!ok) return
     setContactSubmissions((prev) => prev.filter((c) => c.id !== id))
   }
 
@@ -200,6 +224,17 @@ export default function AdminDashboard() {
       </main>
     )
   }
+
+  const sectionEmpty = <p className="text-sm text-[var(--text-tertiary)]">No ads match the selected gender filter.</p>
+
+  const tabs: Array<{ key: GenderFilter; label: string }> = [
+    { key: 'all', label: 'All' },
+    { key: 'female', label: 'Female' },
+    { key: 'male', label: 'Male' },
+    { key: 'trans', label: 'Trans' },
+    { key: 'luxury_escort', label: 'Luxury/High End' },
+    { key: 'webcam', label: 'Webcam' },
+  ]
 
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors">
@@ -215,112 +250,65 @@ export default function AdminDashboard() {
       </header>
 
       <div className="container mx-auto px-4 py-12 max-w-7xl">
-        <h1 className="text-3xl font-semibold mb-8 text-[var(--text-primary)] transition-colors">Admin Dashboard</h1>
+        <h1 className="text-3xl font-semibold mb-6 text-[var(--text-primary)] transition-colors">Admin Dashboard</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-6 transition-colors">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2 transition-colors">Live Ads</h3>
-            <p className="text-3xl font-bold text-green-500">{stats.live}</p>
-          </div>
-          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-6 transition-colors">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2 transition-colors">Pending Approval</h3>
-            <p className="text-3xl font-bold text-yellow-500">{stats.pending}</p>
-          </div>
-          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-6 transition-colors">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2 transition-colors">Inactive Ads</h3>
-            <p className="text-3xl font-bold text-red-500">{stats.inactive}</p>
-          </div>
-          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] p-6 transition-colors">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2 transition-colors">Contact Messages</h3>
-            <p className="text-3xl font-bold text-blue-500">{pendingContacts.length}</p>
+        <div className="mb-8">
+          <h2 className="text-sm font-medium text-[var(--text-secondary)] mb-3">Filter by Gender</h2>
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((t) => {
+              const active = genderFilter === t.key
+              const cls = active
+                ? 'px-3 py-2 rounded-lg text-sm font-medium border transition-colors bg-[var(--accent-pink)] text-white border-[var(--accent-pink)]'
+                : 'px-3 py-2 rounded-lg text-sm font-medium border transition-colors bg-[var(--bg-secondary)] text-[var(--text-primary)] border-[var(--border-primary)] hover:border-[var(--accent-pink)]'
+              const count = genderCounts[t.key] || 0
+              return (
+                <button key={t.key} onClick={() => setGenderFilter(t.key)} className={cls} type="button">
+                  {t.label}{' '}
+                  <span className={active ? 'text-white/90' : 'text-[var(--text-tertiary)]'}>({count})</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
         {pendingAds.length > 0 && (
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-6 text-[var(--text-primary)] border-b border-[var(--border-primary)] pb-2 transition-colors">
-              Pending Approval ({pendingAds.length})
+              Pending Approval ({filteredPendingAds.length}{genderFilter === 'all' ? '' : ` / ${pendingAds.length}`})
             </h2>
             <div className="space-y-4">
-              {pendingAds.map((ad) => (
-                <div key={ad.id} className="bg-[var(--bg-secondary)] border border-yellow-500/50 p-6 transition-colors">
-                  <div className="flex gap-6">
-                    {ad.images && ad.images.length > 0 && (
-                      <div className="flex-shrink-0">
-                        <div className="grid grid-cols-2 gap-2 w-32">
-                          {ad.images.slice(0, 4).map((img, idx) => (
-                            <div key={img + idx} className="aspect-[3/4] overflow-hidden rounded bg-[var(--bg-tertiary)]">
-                              <img src={img} alt={`${ad.name} ${idx + 1}`} className="w-full h-full object-cover" />
+              {filteredPendingAds.length === 0
+                ? sectionEmpty
+                : filteredPendingAds.map((ad) => (
+                    <div key={ad.id} className="bg-[var(--bg-secondary)] border border-yellow-500/50 p-6 transition-colors">
+                      <div className="flex gap-6">
+                        <Thumbnails images={ad.images} name={ad.name} />
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start gap-4">
+                            <div>
+                              <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">
+                                {ad.name}, {ad.age} – {ad.gender}
+                              </h3>
+                              <p className="text-sm text-[var(--text-secondary)] transition-colors">
+                                {ad.city}, {ad.country} • Submitted: {formatDate(ad.submittedAt)}
+                              </p>
                             </div>
-                          ))}
+                            <div className="flex gap-2 flex-wrap justify-end">
+                              <button onClick={() => startEdit(ad)} className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors">
+                                Edit
+                              </button>
+                              <button onClick={() => updateAdStatus(ad.id, 'approved')} className="px-4 py-2 bg-green-500 text-white hover:bg-green-600 transition-colors">
+                                Approve
+                              </button>
+                              <button onClick={() => updateAdStatus(ad.id, 'inactive')} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
+                                Reject
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        {ad.images.length > 4 && <p className="text-xs text-[var(--text-tertiary)] mt-2 text-center">+{ad.images.length - 4} more</p>}
-                      </div>
-                    )}
-
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start gap-4 mb-4">
-                        <div>
-                          <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">
-                            {ad.name}, {ad.age} – {ad.gender}
-                          </h3>
-                          <p className="text-sm text-[var(--text-secondary)] transition-colors">
-                            {ad.city}, {ad.country} • Submitted: {formatDate(ad.submittedAt)}
-                          </p>
-                        </div>
-                        <div className="flex gap-2 flex-wrap justify-end">
-                          <button onClick={() => startEdit(ad)} className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors">
-                            Edit
-                          </button>
-                          <button onClick={() => updateAdStatus(ad.id, 'approved')} className="px-4 py-2 bg-green-500 text-white hover:bg-green-600 transition-colors">
-                            Approve
-                          </button>
-                          <button onClick={() => updateAdStatus(ad.id, 'inactive')} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div className="text-[var(--text-secondary)] transition-colors">
-                          <p>
-                            <strong>Phone:</strong> {ad.phone}
-                          </p>
-                          {ad.email && (
-                            <p>
-                              <strong>Email:</strong> {ad.email}
-                            </p>
-                          )}
-                          {ad.whatsapp && (
-                            <p>
-                              <strong>WhatsApp:</strong> {ad.whatsapp}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-[var(--text-secondary)] transition-colors">
-                          {ad.hairColor && (
-                            <p>
-                              <strong>Hair Color:</strong> {ad.hairColor}
-                            </p>
-                          )}
-                          {ad.languages && ad.languages.length > 0 && (
-                            <p>
-                              <strong>Languages:</strong> {ad.languages.join(', ')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <p className="text-[var(--text-secondary)] transition-colors">
-                          <strong>Description:</strong>
-                        </p>
-                        <p className="text-[var(--text-primary)] mt-1 transition-colors">{ad.description}</p>
                       </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))}
             </div>
           </section>
         )}
@@ -328,34 +316,41 @@ export default function AdminDashboard() {
         {approvedAds.length > 0 && (
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-6 text-[var(--text-primary)] border-b border-[var(--border-primary)] pb-2 transition-colors">
-              Approved Ads ({approvedAds.length})
+              Approved Ads ({filteredApprovedAds.length}{genderFilter === 'all' ? '' : ` / ${approvedAds.length}`})
             </h2>
             <div className="space-y-4">
-              {approvedAds.map((ad) => (
-                <div key={ad.id} className="bg-[var(--bg-secondary)] border border-green-500/50 p-6 transition-colors">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">
-                        {ad.name}, {ad.age} – {ad.gender}
-                      </h3>
-                      <p className="text-sm text-[var(--text-secondary)] transition-colors">
-                        {ad.city}, {ad.country} • {formatDate(ad.submittedAt)}
-                      </p>
+              {filteredApprovedAds.length === 0
+                ? sectionEmpty
+                : filteredApprovedAds.map((ad) => (
+                    <div key={ad.id} className="bg-[var(--bg-secondary)] border border-green-500/50 p-6 transition-colors">
+                      <div className="flex gap-6">
+                        <Thumbnails images={ad.images} name={ad.name} />
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start gap-4">
+                            <div>
+                              <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">
+                                {ad.name}, {ad.age} – {ad.gender}
+                              </h3>
+                              <p className="text-sm text-[var(--text-secondary)] transition-colors">
+                                {ad.city}, {ad.country} • {formatDate(ad.submittedAt)}
+                              </p>
+                            </div>
+                            <div className="flex gap-2 flex-wrap justify-end">
+                              <button onClick={() => startEdit(ad)} className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors">
+                                Edit
+                              </button>
+                              <button onClick={() => updateAdStatus(ad.id, 'inactive')} className="px-4 py-2 bg-yellow-500 text-white hover:bg-yellow-600 transition-colors">
+                                Deactivate
+                              </button>
+                              <button onClick={() => handleDeleteAd(ad.id)} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap justify-end">
-                      <button onClick={() => startEdit(ad)} className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors">
-                        Edit
-                      </button>
-                      <button onClick={() => updateAdStatus(ad.id, 'inactive')} className="px-4 py-2 bg-yellow-500 text-white hover:bg-yellow-600 transition-colors">
-                        Deactivate
-                      </button>
-                      <button onClick={() => handleDeleteAd(ad.id)} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  ))}
             </div>
           </section>
         )}
@@ -363,99 +358,43 @@ export default function AdminDashboard() {
         {inactiveAds.length > 0 && (
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-6 text-[var(--text-primary)] border-b border-[var(--border-primary)] pb-2 transition-colors">
-              Inactive Ads ({inactiveAds.length})
+              Inactive Ads ({filteredInactiveAds.length}{genderFilter === 'all' ? '' : ` / ${inactiveAds.length}`})
             </h2>
             <div className="space-y-4">
-              {inactiveAds.map((ad) => (
-                <div key={ad.id} className="bg-[var(--bg-secondary)] border border-red-500/50 p-6 transition-colors">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">
-                        {ad.name}, {ad.age} – {ad.gender}
-                      </h3>
-                      <p className="text-sm text-[var(--text-secondary)] transition-colors">
-                        {ad.city}, {ad.country} • {formatDate(ad.submittedAt)}
-                      </p>
+              {filteredInactiveAds.length === 0
+                ? sectionEmpty
+                : filteredInactiveAds.map((ad) => (
+                    <div key={ad.id} className="bg-[var(--bg-secondary)] border border-red-500/50 p-6 transition-colors">
+                      <div className="flex gap-6">
+                        <Thumbnails images={ad.images} name={ad.name} />
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start gap-4">
+                            <div>
+                              <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">
+                                {ad.name}, {ad.age} – {ad.gender}
+                              </h3>
+                              <p className="text-sm text-[var(--text-secondary)] transition-colors">
+                                {ad.city}, {ad.country} • {formatDate(ad.submittedAt)}
+                              </p>
+                            </div>
+                            <div className="flex gap-2 flex-wrap justify-end">
+                              <button onClick={() => startEdit(ad)} className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors">
+                                Edit
+                              </button>
+                              <button onClick={() => updateAdStatus(ad.id, 'approved')} className="px-4 py-2 bg-green-500 text-white hover:bg-green-600 transition-colors">
+                                Reactivate
+                              </button>
+                              <button onClick={() => handleDeleteAd(ad.id)} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap justify-end">
-                      <button onClick={() => startEdit(ad)} className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors">
-                        Edit
-                      </button>
-                      <button onClick={() => updateAdStatus(ad.id, 'approved')} className="px-4 py-2 bg-green-500 text-white hover:bg-green-600 transition-colors">
-                        Reactivate
-                      </button>
-                      <button onClick={() => handleDeleteAd(ad.id)} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  ))}
             </div>
           </section>
-        )}
-
-        {pendingContacts.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-6 text-[var(--text-primary)] border-b border-[var(--border-primary)] pb-2 transition-colors">
-              Pending Contact Messages ({pendingContacts.length})
-            </h2>
-            <div className="space-y-4">
-              {pendingContacts.map((c) => (
-                <div key={c.id} className="bg-[var(--bg-secondary)] border border-blue-500/50 p-6 transition-colors">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">{c.subject}</h3>
-                      <p className="text-sm text-[var(--text-secondary)] transition-colors">
-                        From: {c.name} • {formatDate(c.submittedAt)}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 flex-wrap justify-end">
-                      <button onClick={() => markContactAsReviewed(c.id)} className="px-4 py-2 bg-green-500 text-white hover:bg-green-600 transition-colors">
-                        Mark Reviewed
-                      </button>
-                      <button onClick={() => deleteContact(c.id)} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                  <p className="mt-4 whitespace-pre-wrap text-[var(--text-primary)] transition-colors">{c.description}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {reviewedContacts.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-6 text-[var(--text-primary)] border-b border-[var(--border-primary)] pb-2 transition-colors">
-              Reviewed Contact Messages ({reviewedContacts.length})
-            </h2>
-            <div className="space-y-4">
-              {reviewedContacts.map((c) => (
-                <div key={c.id} className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] opacity-60 p-6 transition-colors">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">{c.subject}</h3>
-                      <p className="text-sm text-[var(--text-secondary)] transition-colors">
-                        From: {c.name} • {formatDate(c.submittedAt)}
-                      </p>
-                    </div>
-                    <button onClick={() => deleteContact(c.id)} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
-                      Delete
-                    </button>
-                  </div>
-                  <p className="mt-4 whitespace-pre-wrap text-[var(--text-primary)] transition-colors">{c.description}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {ads.length === 0 && contactSubmissions.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-[var(--text-secondary)] text-lg">No submissions yet.</p>
-          </div>
         )}
       </div>
 
@@ -465,157 +404,12 @@ export default function AdminDashboard() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold text-[var(--text-primary)] transition-colors">Edit Ad: {editingAd.name}</h2>
-                <button onClick={cancelEdit} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                <button onClick={cancelEdit} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" type="button">
                   ✕
                 </button>
               </div>
 
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Name *</label>
-                    <input
-                      type="text"
-                      value={editFormData.name || ''}
-                      onChange={(e) => handleEditChange('name', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Age *</label>
-                    <input
-                      type="text"
-                      value={(editFormData.age as any) || ''}
-                      onChange={(e) => handleEditChange('age', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Gender *</label>
-                    <select
-                      value={editFormData.gender || 'female'}
-                      onChange={(e) => handleEditChange('gender', e.target.value as any)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    >
-                      <option value="female">Girls</option>
-                      <option value="male">Guys</option>
-                      <option value="trans">Trans</option>
-                      <option value="luxury_escort">Luxury/High End</option>
-                      <option value="webcam">Webcam</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">City *</label>
-                    <input
-                      type="text"
-                      value={editFormData.city || ''}
-                      onChange={(e) => handleEditChange('city', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Country *</label>
-                    <input
-                      type="text"
-                      value={editFormData.country || ''}
-                      onChange={(e) => handleEditChange('country', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Phone *</label>
-                    <input
-                      type="text"
-                      value={editFormData.phone || ''}
-                      onChange={(e) => handleEditChange('phone', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Email</label>
-                    <input
-                      type="email"
-                      value={editFormData.email || ''}
-                      onChange={(e) => handleEditChange('email', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">WhatsApp</label>
-                    <input
-                      type="text"
-                      value={editFormData.whatsapp || ''}
-                      onChange={(e) => handleEditChange('whatsapp', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Telegram</label>
-                    <input
-                      type="text"
-                      value={editFormData.telegram || ''}
-                      onChange={(e) => handleEditChange('telegram', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Instagram</label>
-                    <input
-                      type="text"
-                      value={editFormData.instagram || ''}
-                      onChange={(e) => handleEditChange('instagram', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Twitter</label>
-                    <input
-                      type="text"
-                      value={editFormData.twitter || ''}
-                      onChange={(e) => handleEditChange('twitter', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Hair Color</label>
-                    <input
-                      type="text"
-                      value={editFormData.hairColor || ''}
-                      onChange={(e) => handleEditChange('hairColor', e.target.value)}
-                      className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-[var(--text-secondary)] mb-2">Description *</label>
-                  <textarea
-                    value={editFormData.description || ''}
-                    onChange={(e) => handleEditChange('description', e.target.value as any)}
-                    rows={6}
-                    className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-[var(--text-secondary)] mb-2">Languages (comma-separated)</label>
-                  <input
-                    type="text"
-                    value={Array.isArray(editFormData.languages) ? editFormData.languages.join(', ') : ''}
-                    onChange={(e) =>
-                      handleEditChange(
-                        'languages',
-                        e.target.value
-                          .split(',')
-                          .map((l) => l.trim())
-                          .filter((l) => l)
-                      )
-                    }
-                    className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
-                    placeholder="German, English, French"
-                  />
-                </div>
-
                 <div>
                   <label className="block text-sm text-[var(--text-secondary)] mb-2">Upload Images (WebP)</label>
                   <input
@@ -624,6 +418,7 @@ export default function AdminDashboard() {
                     multiple
                     disabled={isUploadingImages}
                     onChange={async (e) => {
+                      const inputEl = e.currentTarget
                       const files = e.target.files
                       if (!files) return
 
@@ -653,49 +448,20 @@ export default function AdminDashboard() {
                         }
 
                         if (uploaded.length > 0) {
-                          handleEditChange('images', [
-                            ...((editFormData.images as any) || []),
-                            ...uploaded,
-                          ] as any)
+                          handleEditChange('images', [...(((editFormData.images as any) || []) as any[]), ...uploaded] as any)
                         }
                       } catch (err: any) {
                         console.error('Admin image upload error:', err)
                         setImageUploadError(err?.message || 'Failed to upload images')
                       } finally {
                         setIsUploadingImages(false)
-                        e.currentTarget.value = ''
+                        if (inputEl) inputEl.value = ''
                       }
                     }}
                     className="w-full px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] transition-colors"
                   />
-                  {isUploadingImages && <p className="text-xs text-[var(--text-tertiary)] mt-2">Uploading & converting images…</p>}
                   {imageUploadError && <p className="text-xs text-red-500 mt-2">{imageUploadError}</p>}
                 </div>
-
-                {editFormData.images && editFormData.images.length > 0 && (
-                  <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Current Images ({editFormData.images.length})</label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {editFormData.images.map((img, idx) => (
-                        <div key={img + idx} className="aspect-[3/4] overflow-hidden rounded bg-[var(--bg-tertiary)] relative group">
-                          <img src={img} alt={`Image ${idx + 1}`} className="w-full h-full object-cover" />
-                          <button
-                            onClick={() => {
-                              const next = [...(editFormData.images || [])]
-                              next.splice(idx, 1)
-                              handleEditChange('images', next as any)
-                            }}
-                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            aria-label="Remove image"
-                            type="button"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex gap-4 pt-4 border-t border-[var(--border-primary)]">
                   <button onClick={saveEdit} className="px-6 py-2 bg-green-500 text-white hover:bg-green-600 transition-colors" type="button">

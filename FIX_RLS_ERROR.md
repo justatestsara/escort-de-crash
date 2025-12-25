@@ -54,3 +54,4 @@ If `rowsecurity` is `true`, RLS is enabled (which is good, but you need the poli
 3. You can approve it in the admin dashboard
 
 
+

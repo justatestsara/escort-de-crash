@@ -68,3 +68,4 @@ SELECT COUNT(*) as policy_count FROM pg_policies WHERE tablename = 'ads';
 -- If you see 4 policies above, you're good to go!
 
 
+

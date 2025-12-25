@@ -35,8 +35,8 @@ const translations: Record<Language, Record<string, string>> = {
     'postAd.action': 'Action',
     
     // Filters
-    'filters.girls': 'Girls',
-    'filters.guys': 'Guys',
+    'filters.girls': 'Female',
+    'filters.guys': 'Male',
     'filters.trans': 'Trans',
     'filters.luxuryEscort': 'Luxury/High End',
     'filters.webcam': 'Webcam',
@@ -148,8 +148,8 @@ const translations: Record<Language, Record<string, string>> = {
     'postAd.action': 'Aktion',
     
     // Filters
-    'filters.girls': 'Mädchen',
-    'filters.guys': 'Jungs',
+    'filters.girls': 'Weiblich',
+    'filters.guys': 'Männlich',
     'filters.trans': 'Trans',
     'filters.luxuryEscort': 'Luxus/High End',
     'filters.webcam': 'Webcam',

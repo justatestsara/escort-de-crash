@@ -20,9 +20,9 @@ function normalizeGender(v: string): Gender | '' {
 function genderLabelEn(g: Gender): string {
   switch (g) {
     case 'female':
-      return 'Girls'
+      return 'Female'
     case 'male':
-      return 'Guys'
+      return 'Male'
     case 'trans':
       return 'Trans'
     case 'luxury_escort':
@@ -54,13 +54,15 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   const country = first(searchParams.country)
   const city = first(searchParams.city)
 
-  const location = city || country
+  const placeShort = city || country
+  const placeLong = city && country ? `${city}, ${country}` : (city || country)
   const canonical = buildCanonical(searchParams)
 
-  const title = location ? `${genderLabelEn(gender)} Escorts ${location}` : 'Featured Models'
-  const description = location
-    ? `Browse ${genderLabelEn(gender)} escorts in ${location}. Verified profiles with photos, rates, and contact information.`
-    : 'Browse featured escort profiles with photos, rates, and contact information.'
+  const label = genderLabelEn(gender)
+  const title = placeShort ? `${placeShort} Escorts, ${label} Independent Escorts in ${placeLong}` : `${label} Escorts, ${label} Independent Escorts`
+  const description = placeShort
+    ? `Browse ${label} independent escorts in ${placeLong}. Verified profiles with photos, rates, and contact information.`
+    : `Browse ${label} independent escort profiles with photos, rates, and contact information.`
 
   return {
     title,
@@ -94,5 +96,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const initialCountry = first(searchParams.country)
   const initialCity = first(searchParams.city)
 
-  return <HomeClient initialModels={models} initialFilters={{ gender: initialGender, country: initialCountry, city: initialCity }} />
+
+  const h1 = initialCity && initialCountry ? `${genderLabelEn(initialGender)} Escorts in ${initialCity}, ${initialCountry}` : initialCountry ? `${genderLabelEn(initialGender)} Escorts in ${initialCountry}` : `${genderLabelEn(initialGender)} Escorts`
+
+  return <HomeClient initialModels={models} initialFilters={{ gender: initialGender, country: initialCountry, city: initialCity }} h1={h1} />
 }

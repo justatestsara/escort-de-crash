@@ -153,9 +153,11 @@ function normalizeGender(v: string | null): Gender | '' {
 export default function HomeClient({
   initialModels,
   initialFilters,
+  h1,
 }: {
   initialModels: Model[]
   initialFilters: InitialFilters
+  h1?: string
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -246,6 +248,19 @@ export default function HomeClient({
             : t('filters.webcam')
   }, [selectedGender, t])
 
+  const h1Text = useMemo(() => {
+    const explicit = (h1 || '').trim()
+    if (explicit) return explicit
+
+    if (!selectedGender) return 'Featured Escorts'
+
+    const label = genderLabelForBreadcrumb || 'Escorts'
+    if (selectedCity && selectedCountry) return `${label} Escorts in ${selectedCity}, ${selectedCountry}`
+    if (selectedCountry) return `${label} Escorts in ${selectedCountry}`
+    return `${label} Escorts`
+  }, [genderLabelForBreadcrumb, h1, selectedCity, selectedCountry, selectedGender])
+
+
   const countryCodeMap: Record<string, string> = {
     Germany: 'de',
     Austria: 'at',
@@ -264,7 +279,7 @@ export default function HomeClient({
   const countryOptions = useMemo<DropdownOption[]>(() => {
     const pool = selectedGender ? models.filter((m) => m.gender === selectedGender) : models
     return [
-      { key: '__all__', label: 'All countries', value: `/${genderSlug}` },
+      { key: '__all__', label: 'All countries', value: `/escorts/${genderSlug}` },
       ...availableCountries.map((country) => {
         const countryCount = pool.filter((m) => m.country === country).length
         const code = countryCodeMap[country] || 'un'
@@ -272,7 +287,7 @@ export default function HomeClient({
         return {
           key: country,
           label: country,
-          value: `/${genderSlug}/${slugify(country)}`,
+          value: `/escorts/${genderSlug}/${slugify(country)}`,
           count: countryCount,
           flagUrl,
         }
@@ -286,13 +301,13 @@ export default function HomeClient({
     const code = countryCodeMap[selectedCountry] || 'un'
     const flagUrl = `https://flagcdn.com/w20/${code}.png`
     return [
-      { key: '__all__', label: 'All cities', value: `/${genderSlug}/${slugify(selectedCountry)}`, flagUrl },
+      { key: '__all__', label: 'All cities', value: `/escorts/${genderSlug}/${slugify(selectedCountry)}`, flagUrl },
       ...availableCities.map((city) => {
         const cityCount = pool.filter((m) => m.city === city && m.country === selectedCountry).length
         return {
           key: city,
           label: city,
-          value: `/${genderSlug}/${slugify(selectedCountry)}/${slugify(city)}`,
+          value: `/escorts/${genderSlug}/${slugify(selectedCountry)}/${slugify(city)}`,
           count: cityCount,
           flagUrl,
         }
@@ -322,7 +337,7 @@ export default function HomeClient({
           itemListElement: [
             { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://escort.de/' },
             ...(selectedGender
-              ? [{ '@type': 'ListItem', position: 2, name: genderLabelForBreadcrumb, item: `https://escort.de/${genderSlug}` }]
+              ? [{ '@type': 'ListItem', position: 2, name: genderLabelForBreadcrumb, item: `https://escort.de/escorts/${genderSlug}` }]
               : []),
             ...(selectedGender && selectedCountry
               ? [
@@ -330,7 +345,7 @@ export default function HomeClient({
                     '@type': 'ListItem',
                     position: 3,
                     name: selectedCountry,
-                    item: `https://escort.de/${genderSlug}/${slugify(selectedCountry)}`,
+                    item: `https://escort.de/escorts/${genderSlug}/${slugify(selectedCountry)}`,
                   },
                 ]
               : []),
@@ -340,7 +355,7 @@ export default function HomeClient({
                     '@type': 'ListItem',
                     position: 4,
                     name: selectedCity,
-                    item: `https://escort.de/${genderSlug}/${slugify(selectedCountry)}/${slugify(selectedCity)}`,
+                    item: `https://escort.de/escorts/${genderSlug}/${slugify(selectedCountry)}/${slugify(selectedCity)}`,
                   },
                 ]
               : []),
@@ -378,7 +393,7 @@ export default function HomeClient({
             <div className="flex justify-center">
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 max-w-3xl w-full">
                 <Link
-                  href="/girls"
+                  href="/escorts/female"
                   className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     effectiveGender === 'female'
                       ? 'bg-[var(--accent-pink)] text-white shadow-md'
@@ -388,7 +403,7 @@ export default function HomeClient({
                   <span>{t('filters.girls')}</span>
                 </Link>
                 <Link
-                  href="/guys"
+                  href="/escorts/male"
                   className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     effectiveGender === 'male'
                       ? 'bg-[var(--accent-pink)] text-white shadow-md'
@@ -398,7 +413,7 @@ export default function HomeClient({
                   <span>{t('filters.guys')}</span>
                 </Link>
                 <Link
-                  href="/trans"
+                  href="/escorts/trans"
                   className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     effectiveGender === 'trans'
                       ? 'bg-[var(--accent-pink)] text-white shadow-md'
@@ -408,7 +423,7 @@ export default function HomeClient({
                   <span>{t('filters.trans')}</span>
                 </Link>
                 <Link
-                  href="/luxury-high-end"
+                  href="/escorts/luxury"
                   className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap col-span-2 sm:col-span-1 ${
                     effectiveGender === 'luxury_escort'
                       ? 'bg-[var(--accent-pink)] text-white shadow-md'
@@ -418,7 +433,7 @@ export default function HomeClient({
                   <span>{t('filters.luxuryEscort')}</span>
                 </Link>
                 <Link
-                  href="/webcam"
+                  href="/escorts/webcam"
                   className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     effectiveGender === 'webcam'
                       ? 'bg-[var(--accent-pink)] text-white shadow-md'
@@ -441,7 +456,7 @@ export default function HomeClient({
               <MobileDropdown
                 id="mobile-country-dropdown"
                 label="Select country"
-                value={selectedCountry ? `/${genderSlug}/${slugify(selectedCountry)}` : `/${genderSlug}`}
+                value={selectedCountry ? `/escorts/${genderSlug}/${slugify(selectedCountry)}` : `/escorts/${genderSlug}`}
                 options={countryOptions}
                 isOpen={isCountryOpen}
                 setIsOpen={(v) => {
@@ -464,7 +479,7 @@ export default function HomeClient({
                 const code = countryCodeMap[country] || 'un'
                 const flagUrl = `https://flagcdn.com/w20/${code}.png`
 
-                const href = selectedCountry === country ? `/${genderSlug}` : `/${genderSlug}/${slugify(country)}`
+                const href = selectedCountry === country ? `/escorts/${genderSlug}` : `/escorts/${genderSlug}/${slugify(country)}`
 
                 return (
                   <Link
@@ -504,8 +519,8 @@ export default function HomeClient({
                   label="Select city"
                   value={
                     selectedCity
-                      ? `/${genderSlug}/${slugify(selectedCountry)}/${slugify(selectedCity)}`
-                      : `/${genderSlug}/${slugify(selectedCountry)}`
+                      ? `/escorts/${genderSlug}/${slugify(selectedCountry)}/${slugify(selectedCity)}`
+                      : `/escorts/${genderSlug}/${slugify(selectedCountry)}`
                   }
                   options={cityOptions}
                   isOpen={isCityOpen}
@@ -530,8 +545,8 @@ export default function HomeClient({
 
                   const href =
                     selectedCity === city
-                      ? `/${genderSlug}/${slugify(selectedCountry)}`
-                      : `/${genderSlug}/${slugify(selectedCountry)}/${slugify(city)}`
+                      ? `/escorts/${genderSlug}/${slugify(selectedCountry)}`
+                      : `/escorts/${genderSlug}/${slugify(selectedCountry)}/${slugify(city)}`
 
                   return (
                     <Link
@@ -562,10 +577,7 @@ export default function HomeClient({
       </nav>
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        {seoHeading ? (
-          <h1 className="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-center text-[var(--text-primary)] transition-colors">{seoHeading}</h1>
-        ) : null}
-
+        <h1 className="text-lg sm:text-2xl font-semibold tracking-tight text-[var(--text-primary)] mb-3 sm:mb-5">{h1Text}</h1>
         {filteredModels.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-[var(--text-secondary)] transition-colors">{t('home.noModelsFound')}</p>
@@ -573,7 +585,7 @@ export default function HomeClient({
         ) : (
           <section aria-label="Escort listings" className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
             {filteredModels.map((m) => {
-              const href = `/ad/${m.id}?back=${encodeURIComponent(landingPath)}`
+              const href = `/escorts/${genderToSlug(m.gender)}/${slugify(m.country)}/${slugify(m.city)}/${m.id}?back=${encodeURIComponent(landingPath)}`
               return (
                 <Link
                   key={m.id}

@@ -15,3 +15,4 @@ WHERE tablename = 'ads';
 -- Then run FIX_RLS_FINAL.sql to re-enable RLS with proper policies.
 
 
+

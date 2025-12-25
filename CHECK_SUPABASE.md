@@ -46,3 +46,4 @@ Go to Supabase Dashboard > Authentication > Policies and verify:
 4. **Environment variables not loading** → Restart dev server after creating `.env.local`
 
 
+

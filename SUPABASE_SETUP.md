@@ -153,3 +153,4 @@ After setting up Supabase, you can migrate existing localStorage data by:
   - Consider using Supabase Auth for admin panel
 
 
+

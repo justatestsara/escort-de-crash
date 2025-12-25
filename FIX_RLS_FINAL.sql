@@ -71,3 +71,4 @@ GRANT ALL ON ads TO authenticated;
 -- You should now see policies for both 'anon' and 'authenticated' roles
 
 
+

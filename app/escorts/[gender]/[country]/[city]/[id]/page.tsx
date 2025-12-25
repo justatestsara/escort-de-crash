@@ -1,12 +1,14 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import AdDetailClient, { type AdModel, type Gender } from '../../components/AdDetailClient'
-import { getAdById } from '../../../lib/supabase-ads'
+import { notFound, permanentRedirect } from 'next/navigation'
+import AdDetailClient, { type AdModel, type Gender } from '../../../../../components/AdDetailClient'
+import { getAdById } from '../../../../../../lib/supabase-ads'
+import { buildLandingPath, genderToSlug, slugify } from '../../../../../../lib/seo-slugs'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
 
-type SearchParams = { gender?: string; country?: string; city?: string; back?: string }
+type Params = { gender: string; country: string; city: string; id: string }
+type SearchParams = { back?: string }
 
 function genderLabelEn(g: Gender): string {
   switch (g) {
@@ -29,36 +31,38 @@ function truncate(s: string, max = 160): string {
   return `${cleaned.slice(0, max - 1)}…`
 }
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const ad = await getAdById(params.id)
-  if (!ad) {
-    return { title: 'Ad not found', robots: { index: false, follow: false } }
-  }
+function canonicalForAd(ad: { id: string; gender: Gender; country: string; city: string }): string {
+  return `/escorts/${genderToSlug(ad.gender)}/${slugify(ad.country)}/${slugify(ad.city)}/${ad.id}`
+}
 
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const ad = await getAdById(params.id)
+  if (!ad) return { title: 'Ad not found', robots: { index: false, follow: false } }
+
+  const canonical = canonicalForAd(ad)
   const age = typeof ad.age === 'string' ? parseInt(ad.age, 10) : ad.age
   const g = genderLabelEn(ad.gender)
-  const title = `${ad.name} (${age}) - ${g} Escort in ${ad.city}, ${ad.country}`
-  const description = truncate(ad.description || `View ${g} escort in ${ad.city}, ${ad.country}.`)
-  const canonical = `/ad/${ad.id}`
+  const title = `${ad.city} Escorts, ${g} Independent Escort in ${ad.city}, ${ad.country}`
+  const description = truncate(ad.description || `Browse ${g} independent escorts in ${ad.city}, ${ad.country}.`)
   const ogImage = ad.images?.[0] || '/og-image.jpg'
 
   return {
     title,
     description,
     alternates: { canonical },
-    openGraph: {
-      type: 'article',
-      title,
-      description,
-      url: canonical,
-      images: [{ url: ogImage }],
-    },
+    openGraph: { type: 'article', title, description, url: canonical, images: [{ url: ogImage }] },
   }
 }
 
-export default async function Page({ params, searchParams }: { params: { id: string }; searchParams?: SearchParams }) {
+export default async function Page({ params, searchParams }: { params: Params; searchParams?: SearchParams }) {
   const ad = await getAdById(params.id)
   if (!ad) notFound()
+
+  const canonical = canonicalForAd(ad)
+  const requested = `/escorts/${params.gender}/${params.country}/${params.city}/${params.id}`
+  if (requested !== canonical) {
+    permanentRedirect(canonical)
+  }
 
   const fallbackImage = 'https://i.ibb.co/GQPtQvJB/image.jpg'
   const images = ad.images && ad.images.length > 0 ? ad.images : [fallbackImage]
@@ -89,14 +93,7 @@ export default async function Page({ params, searchParams }: { params: { id: str
   const backUrl =
     backFromQuery && backFromQuery.startsWith('/')
       ? backFromQuery
-      : (() => {
-          const qp = new URLSearchParams()
-          if (searchParams?.gender) qp.set('gender', searchParams.gender)
-          if (searchParams?.country) qp.set('country', searchParams.country)
-          if (searchParams?.city) qp.set('city', searchParams.city)
-          const qs = qp.toString()
-          return qs ? `/?${qs}` : '/'
-        })()
+      : buildLandingPath({ gender: ad.gender, country: ad.country, city: ad.city })
 
   return <AdDetailClient model={model} backUrl={backUrl} />
 }

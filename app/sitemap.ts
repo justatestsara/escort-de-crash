@@ -1,4 +1,4 @@
-﻿import { MetadataRoute } from 'next'
+import { MetadataRoute } from 'next'
 import { getAllAds } from '../lib/supabase-ads'
 import { genderToSlug, slugify } from '../lib/seo-slugs'
 
@@ -23,13 +23,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const ad of approvedAds) {
       const gSlug = genderToSlug(ad.gender as any)
-      genderSet.add(`${baseUrl}/${gSlug}`)
+      genderSet.add(`${baseUrl}/escorts/${gSlug}`)
 
       const cSlug = slugify(ad.country)
-      genderCountrySet.add(`${baseUrl}/${gSlug}/${cSlug}`)
+      genderCountrySet.add(`${baseUrl}/escorts/${gSlug}/${cSlug}`)
 
       const citySlug = slugify(ad.city)
-      genderCountryCitySet.add(`${baseUrl}/${gSlug}/${cSlug}/${citySlug}`)
+      genderCountryCitySet.add(`${baseUrl}/escorts/${gSlug}/${cSlug}/${citySlug}`)
     }
 
     const now = new Date()
@@ -91,4 +91,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ]
   }
 }
+
 
