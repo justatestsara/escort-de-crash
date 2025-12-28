@@ -94,6 +94,7 @@ async function uploadWebpToSupabaseStorage(blob: Blob): Promise<string> {
 export default function PostAd() {
   const { theme, toggleTheme } = useTheme()
   const { t } = useLanguage()
+  const whatsappHref = 'https://wa.me/359898886887'
 
   const [formData, setFormData] = useState({
     name: '',
@@ -328,6 +329,18 @@ export default function PostAd() {
 
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-3xl font-light mb-8 text-[var(--text-primary)] transition-colors">{t('postAd.title')}</h1>
+        <div className="-mt-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <p className="text-sm text-[var(--text-secondary)] transition-colors">{t('postAd.whatsappCta')}</p>
+          <a
+            href={whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors w-full sm:w-auto"
+            aria-label="Contact us on WhatsApp"
+          >
+            <span className="font-semibold">{t('postAd.whatsappButton')}</span>
+          </a>
+        </div>
 
         {submitted ? (
           <div className="border border-green-500 bg-green-500/10 p-6 mb-6">

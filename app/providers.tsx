@@ -51,6 +51,8 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Post Ad page
     'postAd.title': 'Post Your Ad',
+    'postAd.whatsappCta': 'Or contact us on WhatsApp and we will do it for you.',
+    'postAd.whatsappButton': 'Contact us on WhatsApp',
     'postAd.photos': 'Photos * (Minimum 3 required)',
     'postAd.addPhoto': 'Add Photo',
     'postAd.basicInfo': 'Basic Information',
@@ -164,6 +166,8 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Post Ad page
     'postAd.title': 'Anzeige aufgeben',
+    'postAd.whatsappCta': 'Oder kontaktieren Sie uns auf WhatsApp und wir machen es für Sie.',
+    'postAd.whatsappButton': 'Kontakt via WhatsApp',
     'postAd.photos': 'Fotos * (Mindestens 3 erforderlich)',
     'postAd.addPhoto': 'Foto hinzufügen',
     'postAd.basicInfo': 'Grundinformationen',
