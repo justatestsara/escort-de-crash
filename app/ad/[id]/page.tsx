@@ -20,6 +20,13 @@ function genderLabelEn(g: any): string {
       return 'Luxury/High End'
     case 'webcam':
       return 'Webcam'
+    // legacy slugs (just in case older rows exist)
+    case 'girls':
+      return 'Female'
+    case 'guys':
+      return 'Male'
+    default:
+      return 'Escort'
   }
 }
 
