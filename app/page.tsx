@@ -80,7 +80,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     const images = ad.images && ad.images.length > 0 ? ad.images : [fallbackImage]
 
     return {
-      id: ad.id,
+      // Use numeric public_id for SEO URLs when available, otherwise fall back to internal id
+      id: String(ad.public_id ?? ad.id),
       name: ad.name,
       age: typeof ad.age === 'string' ? parseInt(ad.age, 10) : ad.age,
       gender: ad.gender,

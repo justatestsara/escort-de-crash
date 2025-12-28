@@ -585,7 +585,8 @@ export default function HomeClient({
         ) : (
           <section aria-label="Escort listings" className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
             {filteredModels.map((m) => {
-              const href = `/escorts/${genderToSlug(m.gender)}/${slugify(m.country)}/${slugify(m.city)}/${m.id}?back=${encodeURIComponent(landingPath)}`
+              // Keep ad URLs clean (no ?back=... in the address bar)
+              const href = `/escorts/${genderToSlug(m.gender)}/${slugify(m.country)}/${slugify(m.city)}/${m.id}`
               return (
                 <Link
                   key={m.id}

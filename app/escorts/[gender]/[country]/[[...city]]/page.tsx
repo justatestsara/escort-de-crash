@@ -67,7 +67,7 @@ export default async function Page({ params }: { params: { gender: string; count
     const images = ad.images && ad.images.length > 0 ? ad.images : [fallbackImage]
 
     return {
-      id: ad.id,
+      id: String(ad.public_id ?? ad.id),
       name: ad.name,
       age: typeof ad.age === 'string' ? parseInt(ad.age, 10) : ad.age,
       gender: ad.gender,

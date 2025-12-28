@@ -60,12 +60,35 @@ function formatDate(iso: string): string {
   return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`
 }
 
+const GENDER_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'female', label: 'Female' },
+  { key: 'male', label: 'Male' },
+  { key: 'trans', label: 'Trans' },
+  { key: 'luxury', label: 'Luxury / High End' },
+  { key: 'webcam', label: 'Webcam' },
+] as const
+
+type GenderFilterKey = (typeof GENDER_FILTERS)[number]['key']
+
+function normalizeGender(gender: unknown): Exclude<GenderFilterKey, 'all'> | 'unknown' {
+  const raw = String(gender || '').trim().toLowerCase()
+  if (!raw) return 'unknown'
+  if (raw === 'girls') return 'female'
+  if (raw === 'guys') return 'male'
+  if (raw === 'female' || raw === 'male' || raw === 'trans' || raw === 'webcam') return raw
+  if (raw === 'luxury' || raw === 'luxury/high end' || raw === 'luxury-high-end' || raw === 'high end' || raw === 'high-end') return 'luxury'
+  return 'unknown'
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
 
   const [ads, setAds] = useState<Ad[]>([])
   const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>([])
   const [loading, setLoading] = useState(true)
+
+  const [genderFilter, setGenderFilter] = useState<GenderFilterKey>('all')
 
   const [editingAd, setEditingAd] = useState<Ad | null>(null)
   const [editFormData, setEditFormData] = useState<Partial<Ad>>({})
@@ -76,6 +99,15 @@ export default function AdminDashboard() {
   const pendingAds = useMemo(() => ads.filter((a) => a.status === 'pending'), [ads])
   const approvedAds = useMemo(() => ads.filter((a) => a.status === 'approved'), [ads])
   const inactiveAds = useMemo(() => ads.filter((a) => a.status === 'inactive'), [ads])
+
+  const applyGenderFilter = (list: Ad[]) => {
+    if (genderFilter === 'all') return list
+    return list.filter((a) => normalizeGender(a.gender) === genderFilter)
+  }
+
+  const filteredPendingAds = useMemo(() => applyGenderFilter(pendingAds), [pendingAds, genderFilter])
+  const filteredApprovedAds = useMemo(() => applyGenderFilter(approvedAds), [approvedAds, genderFilter])
+  const filteredInactiveAds = useMemo(() => applyGenderFilter(inactiveAds), [inactiveAds, genderFilter])
 
   const pendingContacts = useMemo(() => contactSubmissions.filter((c) => c.status === 'pending'), [contactSubmissions])
   const reviewedContacts = useMemo(() => contactSubmissions.filter((c) => c.status === 'reviewed'), [contactSubmissions])
@@ -236,27 +268,60 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        <div className="mb-10">
+          <div className="flex flex-wrap gap-2 items-center">
+            <p className="text-sm text-[var(--text-secondary)] mr-2">Filter by gender:</p>
+            {GENDER_FILTERS.map((g) => {
+              const active = g.key === genderFilter
+              return (
+                <button
+                  key={g.key}
+                  type="button"
+                  onClick={() => setGenderFilter(g.key)}
+                  className={
+                    active
+                      ? 'px-3 py-2 text-sm border border-[var(--accent-pink)] bg-[var(--bg-secondary)] text-[var(--text-primary)] transition-colors'
+                      : 'px-3 py-2 text-sm border border-[var(--border-primary)] hover:border-[var(--accent-pink)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors'
+                  }
+                >
+                  {g.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         {pendingAds.length > 0 && (
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-6 text-[var(--text-primary)] border-b border-[var(--border-primary)] pb-2 transition-colors">
-              Pending Approval ({pendingAds.length})
+              Pending Approval ({filteredPendingAds.length}
+              {genderFilter !== 'all' ? ` of ${pendingAds.length}` : ''})
             </h2>
             <div className="space-y-4">
-              {pendingAds.map((ad) => (
+              {filteredPendingAds.length === 0 && <p className="text-sm text-[var(--text-tertiary)]">No ads match the selected gender filter.</p>}
+              {filteredPendingAds.map((ad) => (
                 <div key={ad.id} className="bg-[var(--bg-secondary)] border border-yellow-500/50 p-6 transition-colors">
                   <div className="flex gap-6">
-                    {ad.images && ad.images.length > 0 && (
-                      <div className="flex-shrink-0">
-                        <div className="grid grid-cols-2 gap-2 w-32">
-                          {ad.images.slice(0, 4).map((img, idx) => (
-                            <div key={img + idx} className="aspect-[3/4] overflow-hidden rounded bg-[var(--bg-tertiary)]">
-                              <img src={img} alt={`${ad.name} ${idx + 1}`} className="w-full h-full object-cover" />
-                            </div>
-                          ))}
+                    <div className="flex-shrink-0">
+                      {ad.images && ad.images.length > 0 ? (
+                        <>
+                          <div className="grid grid-cols-2 gap-2 w-32">
+                            {ad.images.slice(0, 4).map((img, idx) => (
+                              <div key={img + idx} className="aspect-[3/4] overflow-hidden rounded bg-[var(--bg-tertiary)]">
+                                <img src={img} alt={`${ad.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                              </div>
+                            ))}
+                          </div>
+                          {ad.images.length > 4 && (
+                            <p className="text-xs text-[var(--text-tertiary)] mt-2 text-center">+{ad.images.length - 4} more</p>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-32 aspect-[3/4] rounded bg-[var(--bg-tertiary)] flex items-center justify-center text-xs text-[var(--text-tertiary)]">
+                          No image
                         </div>
-                        {ad.images.length > 4 && <p className="text-xs text-[var(--text-tertiary)] mt-2 text-center">+{ad.images.length - 4} more</p>}
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     <div className="flex-1">
                       <div className="flex justify-between items-start gap-4 mb-4">
@@ -328,30 +393,57 @@ export default function AdminDashboard() {
         {approvedAds.length > 0 && (
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-6 text-[var(--text-primary)] border-b border-[var(--border-primary)] pb-2 transition-colors">
-              Approved Ads ({approvedAds.length})
+              Approved Ads ({filteredApprovedAds.length}
+              {genderFilter !== 'all' ? ` of ${approvedAds.length}` : ''})
             </h2>
             <div className="space-y-4">
-              {approvedAds.map((ad) => (
+              {filteredApprovedAds.length === 0 && <p className="text-sm text-[var(--text-tertiary)]">No ads match the selected gender filter.</p>}
+              {filteredApprovedAds.map((ad) => (
                 <div key={ad.id} className="bg-[var(--bg-secondary)] border border-green-500/50 p-6 transition-colors">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">
-                        {ad.name}, {ad.age} – {ad.gender}
-                      </h3>
-                      <p className="text-sm text-[var(--text-secondary)] transition-colors">
-                        {ad.city}, {ad.country} • {formatDate(ad.submittedAt)}
-                      </p>
+                  <div className="flex gap-6">
+                    <div className="flex-shrink-0">
+                      {ad.images && ad.images.length > 0 ? (
+                        <>
+                          <div className="grid grid-cols-2 gap-2 w-32">
+                            {ad.images.slice(0, 4).map((img, idx) => (
+                              <div key={img + idx} className="aspect-[3/4] overflow-hidden rounded bg-[var(--bg-tertiary)]">
+                                <img src={img} alt={`${ad.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                              </div>
+                            ))}
+                          </div>
+                          {ad.images.length > 4 && (
+                            <p className="text-xs text-[var(--text-tertiary)] mt-2 text-center">+{ad.images.length - 4} more</p>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-32 aspect-[3/4] rounded bg-[var(--bg-tertiary)] flex items-center justify-center text-xs text-[var(--text-tertiary)]">
+                          No image
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-2 flex-wrap justify-end">
-                      <button onClick={() => startEdit(ad)} className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors">
-                        Edit
-                      </button>
-                      <button onClick={() => updateAdStatus(ad.id, 'inactive')} className="px-4 py-2 bg-yellow-500 text-white hover:bg-yellow-600 transition-colors">
-                        Deactivate
-                      </button>
-                      <button onClick={() => handleDeleteAd(ad.id)} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
-                        Delete
-                      </button>
+
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start gap-4 mb-4">
+                        <div>
+                          <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">
+                            {ad.name}, {ad.age} – {ad.gender}
+                          </h3>
+                          <p className="text-sm text-[var(--text-secondary)] transition-colors">
+                            {ad.city}, {ad.country} • {formatDate(ad.submittedAt)}
+                          </p>
+                        </div>
+                        <div className="flex gap-2 flex-wrap justify-end">
+                          <button onClick={() => startEdit(ad)} className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors">
+                            Edit
+                          </button>
+                          <button onClick={() => updateAdStatus(ad.id, 'inactive')} className="px-4 py-2 bg-yellow-500 text-white hover:bg-yellow-600 transition-colors">
+                            Deactivate
+                          </button>
+                          <button onClick={() => handleDeleteAd(ad.id)} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
+                            Delete
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -363,30 +455,57 @@ export default function AdminDashboard() {
         {inactiveAds.length > 0 && (
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-6 text-[var(--text-primary)] border-b border-[var(--border-primary)] pb-2 transition-colors">
-              Inactive Ads ({inactiveAds.length})
+              Inactive Ads ({filteredInactiveAds.length}
+              {genderFilter !== 'all' ? ` of ${inactiveAds.length}` : ''})
             </h2>
             <div className="space-y-4">
-              {inactiveAds.map((ad) => (
+              {filteredInactiveAds.length === 0 && <p className="text-sm text-[var(--text-tertiary)]">No ads match the selected gender filter.</p>}
+              {filteredInactiveAds.map((ad) => (
                 <div key={ad.id} className="bg-[var(--bg-secondary)] border border-red-500/50 p-6 transition-colors">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">
-                        {ad.name}, {ad.age} – {ad.gender}
-                      </h3>
-                      <p className="text-sm text-[var(--text-secondary)] transition-colors">
-                        {ad.city}, {ad.country} • {formatDate(ad.submittedAt)}
-                      </p>
+                  <div className="flex gap-6">
+                    <div className="flex-shrink-0">
+                      {ad.images && ad.images.length > 0 ? (
+                        <>
+                          <div className="grid grid-cols-2 gap-2 w-32">
+                            {ad.images.slice(0, 4).map((img, idx) => (
+                              <div key={img + idx} className="aspect-[3/4] overflow-hidden rounded bg-[var(--bg-tertiary)]">
+                                <img src={img} alt={`${ad.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                              </div>
+                            ))}
+                          </div>
+                          {ad.images.length > 4 && (
+                            <p className="text-xs text-[var(--text-tertiary)] mt-2 text-center">+{ad.images.length - 4} more</p>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-32 aspect-[3/4] rounded bg-[var(--bg-tertiary)] flex items-center justify-center text-xs text-[var(--text-tertiary)]">
+                          No image
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-2 flex-wrap justify-end">
-                      <button onClick={() => startEdit(ad)} className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors">
-                        Edit
-                      </button>
-                      <button onClick={() => updateAdStatus(ad.id, 'approved')} className="px-4 py-2 bg-green-500 text-white hover:bg-green-600 transition-colors">
-                        Reactivate
-                      </button>
-                      <button onClick={() => handleDeleteAd(ad.id)} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
-                        Delete
-                      </button>
+
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start gap-4 mb-4">
+                        <div>
+                          <h3 className="text-xl font-semibold text-[var(--text-primary)] transition-colors">
+                            {ad.name}, {ad.age} – {ad.gender}
+                          </h3>
+                          <p className="text-sm text-[var(--text-secondary)] transition-colors">
+                            {ad.city}, {ad.country} • {formatDate(ad.submittedAt)}
+                          </p>
+                        </div>
+                        <div className="flex gap-2 flex-wrap justify-end">
+                          <button onClick={() => startEdit(ad)} className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors">
+                            Edit
+                          </button>
+                          <button onClick={() => updateAdStatus(ad.id, 'approved')} className="px-4 py-2 bg-green-500 text-white hover:bg-green-600 transition-colors">
+                            Reactivate
+                          </button>
+                          <button onClick={() => handleDeleteAd(ad.id)} className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
+                            Delete
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

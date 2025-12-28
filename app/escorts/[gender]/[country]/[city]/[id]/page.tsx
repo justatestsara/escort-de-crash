@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, permanentRedirect } from 'next/navigation'
 import AdDetailClient, { type AdModel, type Gender } from '../../../../../components/AdDetailClient'
-import { getAdById } from '../../../../../../lib/supabase-ads'
+import { getAdByIdentifier } from '../../../../../../lib/supabase-ads'
 import { buildLandingPath, genderToSlug, slugify } from '../../../../../../lib/seo-slugs'
 
 export const dynamic = 'force-dynamic'
@@ -31,12 +31,13 @@ function truncate(s: string, max = 160): string {
   return `${cleaned.slice(0, max - 1)}…`
 }
 
-function canonicalForAd(ad: { id: string; gender: Gender; country: string; city: string }): string {
-  return `/escorts/${genderToSlug(ad.gender)}/${slugify(ad.country)}/${slugify(ad.city)}/${ad.id}`
+function canonicalForAd(ad: { id: string; public_id?: number | null; gender: Gender; country: string; city: string }): string {
+  const urlId = String(ad.public_id ?? ad.id)
+  return `/escorts/${genderToSlug(ad.gender)}/${slugify(ad.country)}/${slugify(ad.city)}/${urlId}`
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const ad = await getAdById(params.id)
+  const ad = await getAdByIdentifier(params.id)
   if (!ad) return { title: 'Ad not found', robots: { index: false, follow: false } }
 
   const canonical = canonicalForAd(ad)
@@ -55,7 +56,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function Page({ params, searchParams }: { params: Params; searchParams?: SearchParams }) {
-  const ad = await getAdById(params.id)
+  const ad = await getAdByIdentifier(params.id)
   if (!ad) notFound()
 
   const canonical = canonicalForAd(ad)

@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 import { getAllAds } from '../lib/supabase-ads'
 import { genderToSlug, slugify } from '../lib/seo-slugs'
+import { BLOG_POSTS } from '../lib/blog-posts'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://escort.de'
@@ -10,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const approvedAds = ads.filter((ad) => ad.status === 'approved')
 
     const adUrls = approvedAds.map((ad) => ({
-      url: `${baseUrl}/ad/${ad.id}`,
+      url: `${baseUrl}/escorts/${genderToSlug(ad.gender as any)}/${slugify(ad.country)}/${slugify(ad.city)}/${String((ad as any).public_id ?? ad.id)}`,
       lastModified: new Date(ad.submittedAt),
       changeFrequency: 'weekly' as const,
       priority: 0.8,
@@ -47,6 +48,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 1,
       },
       {
+        url: `${baseUrl}/blog`,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.5,
+      },
+      {
         url: `${baseUrl}/contact`,
         lastModified: now,
         changeFrequency: 'monthly',
@@ -66,7 +73,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
     ]
 
-    return [...staticUrls, ...landingUrls, ...adUrls]
+    const blogUrls: MetadataRoute.Sitemap = BLOG_POSTS.map((p) => ({
+      url: `${baseUrl}/blog/${p.slug}`,
+      lastModified: new Date(p.date),
+      changeFrequency: 'monthly' as const,
+      priority: 0.4,
+    }))
+
+    return [...staticUrls, ...blogUrls, ...landingUrls, ...adUrls]
   } catch (error) {
     console.error('Error generating sitemap:', error)
     return [
@@ -75,6 +89,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(),
         changeFrequency: 'daily',
         priority: 1,
+      },
+      {
+        url: `${baseUrl}/blog`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.5,
       },
       {
         url: `${baseUrl}/contact`,

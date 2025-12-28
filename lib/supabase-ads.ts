@@ -2,6 +2,11 @@ import { supabase } from './supabase'
 
 export interface Ad {
   id: string
+  /**
+   * Optional numeric public ID for SEO-friendly URLs.
+   * Add it in Supabase via SQL migration (see tools/add_public_id_to_ads.sql).
+   */
+  public_id?: number | null
   name: string
   age: string | number
   gender: 'female' | 'male' | 'trans' | 'luxury_escort' | 'webcam'
@@ -76,6 +81,32 @@ export async function getAdById(id: string): Promise<Ad | null> {
   }
   
   return data
+}
+
+export async function getAdByPublicId(publicId: number): Promise<Ad | null> {
+  const { data, error } = await supabase
+    .from('ads')
+    .select('*')
+    .eq('public_id', publicId)
+    .eq('status', 'approved')
+    .single()
+
+  if (error) {
+    console.error('Error fetching ad by public_id:', error)
+    return null
+  }
+
+  return data
+}
+
+export async function getAdByIdentifier(identifier: string): Promise<Ad | null> {
+  const s = String(identifier || '').trim()
+  if (/^\d+$/.test(s)) {
+    // numeric ID -> public_id
+    const n = Number(s)
+    if (Number.isFinite(n)) return await getAdByPublicId(n)
+  }
+  return await getAdById(s)
 }
 
 export async function createAd(ad: Omit<Ad, 'submittedAt'> | Ad): Promise<Ad | null> {

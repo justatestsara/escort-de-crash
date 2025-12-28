@@ -1,14 +1,14 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import AdDetailClient, { type AdModel, type Gender } from '../../components/AdDetailClient'
-import { getAdById } from '../../../lib/supabase-ads'
+import { notFound, permanentRedirect } from 'next/navigation'
+import { getAdByIdentifier } from '../../../lib/supabase-ads'
+import { genderToSlug, slugify } from '../../../lib/seo-slugs'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
 
 type SearchParams = { gender?: string; country?: string; city?: string; back?: string }
 
-function genderLabelEn(g: Gender): string {
+function genderLabelEn(g: any): string {
   switch (g) {
     case 'female':
       return 'Female'
@@ -30,7 +30,7 @@ function truncate(s: string, max = 160): string {
 }
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const ad = await getAdById(params.id)
+  const ad = await getAdByIdentifier(params.id)
   if (!ad) {
     return { title: 'Ad not found', robots: { index: false, follow: false } }
   }
@@ -39,13 +39,15 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const g = genderLabelEn(ad.gender)
   const title = `${ad.name} (${age}) - ${g} Escort in ${ad.city}, ${ad.country}`
   const description = truncate(ad.description || `View ${g} escort in ${ad.city}, ${ad.country}.`)
-  const canonical = `/ad/${ad.id}`
+  // Legacy route: canonical is the new SEO-friendly escorts path
+  const canonical = `/escorts/${genderToSlug(ad.gender as any)}/${slugify(ad.country)}/${slugify(ad.city)}/${String((ad as any).public_id ?? ad.id)}`
   const ogImage = ad.images?.[0] || '/og-image.jpg'
 
   return {
     title,
     description,
     alternates: { canonical },
+    robots: { index: false, follow: true },
     openGraph: {
       type: 'article',
       title,
@@ -57,46 +59,10 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function Page({ params, searchParams }: { params: { id: string }; searchParams?: SearchParams }) {
-  const ad = await getAdById(params.id)
+  const ad = await getAdByIdentifier(params.id)
   if (!ad) notFound()
 
-  const fallbackImage = 'https://i.ibb.co/GQPtQvJB/image.jpg'
-  const images = ad.images && ad.images.length > 0 ? ad.images : [fallbackImage]
-
-  const model: AdModel = {
-    id: ad.id,
-    name: ad.name,
-    age: typeof ad.age === 'string' ? parseInt(ad.age, 10) : ad.age,
-    gender: ad.gender,
-    city: ad.city,
-    country: ad.country,
-    image: images[0],
-    images,
-    description: ad.description,
-    phone: ad.phone,
-    email: ad.email,
-    whatsapp: ad.whatsapp,
-    telegram: ad.telegram,
-    instagram: ad.instagram,
-    twitter: ad.twitter,
-    hairColor: ad.hairColor,
-    languages: ad.languages,
-    services: ad.services,
-    rates: ad.rates,
-  }
-
-  const backFromQuery = (searchParams?.back || '').trim()
-  const backUrl =
-    backFromQuery && backFromQuery.startsWith('/')
-      ? backFromQuery
-      : (() => {
-          const qp = new URLSearchParams()
-          if (searchParams?.gender) qp.set('gender', searchParams.gender)
-          if (searchParams?.country) qp.set('country', searchParams.country)
-          if (searchParams?.city) qp.set('city', searchParams.city)
-          const qs = qp.toString()
-          return qs ? `/?${qs}` : '/'
-        })()
-
-  return <AdDetailClient model={model} backUrl={backUrl} />
+  // Permanently redirect legacy /ad/:id URLs to canonical SEO-friendly URL
+  const canonical = `/escorts/${genderToSlug(ad.gender as any)}/${slugify(ad.country)}/${slugify(ad.city)}/${String((ad as any).public_id ?? ad.id)}`
+  permanentRedirect(canonical)
 }
