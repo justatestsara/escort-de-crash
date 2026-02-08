@@ -25,7 +25,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     'header.light': 'Light',
     'header.dark': 'Dark',
-    'header.postAd': 'Post Ad',
+    'header.postAd': 'Post Ad (FREE)',
     'header.backToHome': 'Back to Home',
     
     // Post Ad additional
@@ -35,11 +35,9 @@ const translations: Record<Language, Record<string, string>> = {
     'postAd.action': 'Action',
     
     // Filters
-    'filters.girls': 'Female',
-    'filters.guys': 'Male',
+    'filters.girls': 'Girls',
+    'filters.guys': 'Guys',
     'filters.trans': 'Trans',
-    'filters.luxuryEscort': 'Luxury/High End',
-    'filters.webcam': 'Webcam',
     'filters.countries': 'Countries',
     'filters.cities': 'Cities',
     
@@ -51,8 +49,6 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Post Ad page
     'postAd.title': 'Post Your Ad',
-    'postAd.whatsappCta': 'Or contact us on WhatsApp and we will do it for you.',
-    'postAd.whatsappButton': 'Contact us on WhatsApp',
     'postAd.photos': 'Photos * (Minimum 3 required)',
     'postAd.addPhoto': 'Add Photo',
     'postAd.basicInfo': 'Basic Information',
@@ -62,8 +58,6 @@ const translations: Record<Language, Record<string, string>> = {
     'postAd.gender.female': 'Female',
     'postAd.gender.male': 'Male',
     'postAd.gender.trans': 'Trans',
-    'postAd.gender.luxuryEscort': 'Luxury/High End',
-    'postAd.gender.webcam': 'Webcam',
     'postAd.hairColor': 'Hair Color',
     'postAd.languages': 'Languages (comma-separated)',
     'postAd.location': 'Location',
@@ -78,6 +72,7 @@ const translations: Record<Language, Record<string, string>> = {
     'postAd.instagram': 'Instagram',
     'postAd.twitter': 'Twitter',
     'postAd.about': 'About',
+    'postAd.noAgencyBanner': 'No agency, No booking fees, you keep 100% of what you earn.',
     'postAd.description': 'Description *',
     'postAd.rates': 'Rates',
     'postAd.time': 'Time',
@@ -140,7 +135,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     'header.light': 'Hell',
     'header.dark': 'Dunkel',
-    'header.postAd': 'Anzeige aufgeben',
+    'header.postAd': 'Anzeige aufgeben (FREE)',
     'header.backToHome': 'Zurück zur Startseite',
     
     // Post Ad additional
@@ -150,11 +145,9 @@ const translations: Record<Language, Record<string, string>> = {
     'postAd.action': 'Aktion',
     
     // Filters
-    'filters.girls': 'Weiblich',
-    'filters.guys': 'Männlich',
+    'filters.girls': 'Mädchen',
+    'filters.guys': 'Jungs',
     'filters.trans': 'Trans',
-    'filters.luxuryEscort': 'Luxus/High End',
-    'filters.webcam': 'Webcam',
     'filters.countries': 'Länder',
     'filters.cities': 'Städte',
     
@@ -166,8 +159,6 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Post Ad page
     'postAd.title': 'Anzeige aufgeben',
-    'postAd.whatsappCta': 'Oder kontaktieren Sie uns auf WhatsApp und wir machen es für Sie.',
-    'postAd.whatsappButton': 'Kontakt via WhatsApp',
     'postAd.photos': 'Fotos * (Mindestens 3 erforderlich)',
     'postAd.addPhoto': 'Foto hinzufügen',
     'postAd.basicInfo': 'Grundinformationen',
@@ -177,8 +168,6 @@ const translations: Record<Language, Record<string, string>> = {
     'postAd.gender.female': 'Weiblich',
     'postAd.gender.male': 'Männlich',
     'postAd.gender.trans': 'Trans',
-    'postAd.gender.luxuryEscort': 'Luxus/High End',
-    'postAd.gender.webcam': 'Webcam',
     'postAd.hairColor': 'Haarfarbe',
     'postAd.languages': 'Sprachen (durch Komma getrennt)',
     'postAd.location': 'Standort',
@@ -192,7 +181,8 @@ const translations: Record<Language, Record<string, string>> = {
     'postAd.socialMedia': 'Soziale Medien',
     'postAd.instagram': 'Instagram',
     'postAd.twitter': 'Twitter',
-    'postAd.about': 'Über',
+    'postAd.about': 'Über mich',
+    'postAd.noAgencyBanner': 'Keine Agentur, keine Fees – du behältst 100% von dem, was du verdienst.',
     'postAd.description': 'Beschreibung *',
     'postAd.rates': 'Preise',
     'postAd.time': 'Zeit',
@@ -233,7 +223,7 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Ad detail page
     'ad.back': 'Zurück',
-    'ad.about': 'Über',
+    'ad.about': 'Über mich',
     'ad.contactInfo': 'Kontaktinformationen',
     'ad.phone': 'Telefon',
     'ad.whatsapp': 'WhatsApp',
