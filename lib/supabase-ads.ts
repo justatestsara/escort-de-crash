@@ -150,15 +150,28 @@ export async function getApprovedCityFacets(filters: ApprovedLocationFacetFilter
  * Minimal query for sitemap generation.
  */
 export async function getApprovedAdsForSitemap(): Promise<Pick<Ad, 'id' | 'submittedAt' | 'gender' | 'country' | 'city'>[]> {
-  const { data, error } = await supabase
-    .from('ads')
-    .select('id,submittedAt,gender,country,city')
-    .eq('status', 'approved')
-    .order('submittedAt', { ascending: false })
-
-  if (error) {
-    console.error('Error fetching approved ads for sitemap:', error)
-    return []
+  // Try to include `public_id` when available so sitemaps can emit numeric IDs.
+  // Some deployments may not have the column yet; fall back gracefully.
+  let data: any[] | null = null
+  try {
+    const r = await supabase
+      .from('ads')
+      .select('id,public_id,submittedAt,gender,country,city')
+      .eq('status', 'approved')
+      .order('submittedAt', { ascending: false })
+    if (r.error) throw r.error
+    data = (r.data || []) as any[]
+  } catch (e) {
+    const r2 = await supabase
+      .from('ads')
+      .select('id,submittedAt,gender,country,city')
+      .eq('status', 'approved')
+      .order('submittedAt', { ascending: false })
+    if (r2.error) {
+      console.error('Error fetching approved ads for sitemap:', r2.error)
+      return []
+    }
+    data = (r2.data || []) as any[]
   }
 
   const rows = (data || []) as any[]

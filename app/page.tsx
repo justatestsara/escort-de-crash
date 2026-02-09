@@ -20,13 +20,13 @@ function normalizeGender(v: string): Gender | '' {
 function genderLabelEn(g: Gender): string {
   switch (g) {
     case 'female':
-      return 'Girls'
+      return 'Female'
     case 'male':
-      return 'Guys'
+      return 'Male'
     case 'trans':
       return 'Trans'
     default:
-      return 'Girls'
+      return 'Female'
   }
 }
 

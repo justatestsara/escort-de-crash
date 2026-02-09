@@ -156,6 +156,7 @@ export default function HomeClient({
   }
 
   const genderSlug = genderToSlug(effectiveGender)
+  const basePath = '/escorts'
 
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors">
@@ -178,7 +179,7 @@ export default function HomeClient({
           itemListElement: [
             { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://escort.de/' },
             ...(selectedGender
-              ? [{ '@type': 'ListItem', position: 2, name: genderLabelForBreadcrumb, item: `https://escort.de/${genderSlug}` }]
+              ? [{ '@type': 'ListItem', position: 2, name: genderLabelForBreadcrumb, item: `https://escort.de${basePath}/${genderSlug}` }]
               : []),
             ...(selectedGender && selectedCountry
               ? [
@@ -186,7 +187,7 @@ export default function HomeClient({
                     '@type': 'ListItem',
                     position: 3,
                     name: selectedCountry,
-                    item: `https://escort.de/${genderSlug}/${slugify(selectedCountry)}`,
+                    item: `https://escort.de${basePath}/${genderSlug}/${slugify(selectedCountry)}`,
                   },
                 ]
               : []),
@@ -196,7 +197,7 @@ export default function HomeClient({
                     '@type': 'ListItem',
                     position: 4,
                     name: selectedCity,
-                    item: `https://escort.de/${genderSlug}/${slugify(selectedCountry)}/${slugify(selectedCity)}`,
+                    item: `https://escort.de${basePath}/${genderSlug}/${slugify(selectedCountry)}/${slugify(selectedCity)}`,
                   },
                 ]
               : []),
@@ -234,7 +235,7 @@ export default function HomeClient({
             <div className="flex justify-center">
               <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 max-w-3xl w-full">
                 <Link
-                  href="/girls"
+                  href={`${basePath}/female`}
                   className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     effectiveGender === 'female'
                       ? 'bg-[var(--accent-pink)] text-white shadow-md'
@@ -244,7 +245,7 @@ export default function HomeClient({
                   <span>{t('filters.girls')}</span>
                 </Link>
                 <Link
-                  href="/guys"
+                  href={`${basePath}/male`}
                   className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     effectiveGender === 'male'
                       ? 'bg-[var(--accent-pink)] text-white shadow-md'
@@ -254,7 +255,7 @@ export default function HomeClient({
                   <span>{t('filters.guys')}</span>
                 </Link>
                 <Link
-                  href="/trans"
+                  href={`${basePath}/trans`}
                   className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     effectiveGender === 'trans'
                       ? 'bg-[var(--accent-pink)] text-white shadow-md'
@@ -275,17 +276,17 @@ export default function HomeClient({
             {/* Mobile dropdown */}
             <div className="sm:hidden">
               <select
-                value={selectedCountry ? `/${genderSlug}/${slugify(selectedCountry)}` : `/${genderSlug}`}
+                value={selectedCountry ? `${basePath}/${genderSlug}/${slugify(selectedCountry)}` : `${basePath}/${genderSlug}`}
                 onChange={(e) => router.push(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg bg-[var(--filter-button-bg)] text-[var(--filter-button-text)] border border-[var(--filter-button-border)]"
                 aria-label="Select country"
               >
-                <option value={`/${genderSlug}`}>All countries</option>
+                <option value={`${basePath}/${genderSlug}`}>All countries</option>
                 {availableCountries.map((country) => {
                   const pool = selectedGender ? models.filter((m) => m.gender === selectedGender) : models
                   const countryCount = pool.filter((m) => m.country === country).length
                   return (
-                    <option key={country} value={`/${genderSlug}/${slugify(country)}`}>
+                    <option key={country} value={`${basePath}/${genderSlug}/${slugify(country)}`}>
                       {country} ({countryCount})
                     </option>
                   )
@@ -301,7 +302,7 @@ export default function HomeClient({
                 const code = countryCodeMap[country] || 'un'
                 const flagUrl = `https://flagcdn.com/w20/${code}.png`
 
-                const href = selectedCountry === country ? `/${genderSlug}` : `/${genderSlug}/${slugify(country)}`
+                const href = selectedCountry === country ? `${basePath}/${genderSlug}` : `${basePath}/${genderSlug}/${slugify(country)}`
 
                 return (
                   <Link
@@ -339,21 +340,21 @@ export default function HomeClient({
                 <select
                   value={
                     selectedCity
-                      ? `/${genderSlug}/${slugify(selectedCountry)}/${slugify(selectedCity)}`
-                      : `/${genderSlug}/${slugify(selectedCountry)}`
+                      ? `${basePath}/${genderSlug}/${slugify(selectedCountry)}/${slugify(selectedCity)}`
+                      : `${basePath}/${genderSlug}/${slugify(selectedCountry)}`
                   }
                   onChange={(e) => router.push(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg bg-[var(--filter-button-bg)] text-[var(--filter-button-text)] border border-[var(--filter-button-border)]"
                   aria-label="Select city"
                 >
-                  <option value={`/${genderSlug}/${slugify(selectedCountry)}`}>All cities</option>
+                  <option value={`${basePath}/${genderSlug}/${slugify(selectedCountry)}`}>All cities</option>
                   {availableCities.map((city) => {
                     const pool = selectedGender ? models.filter((m) => m.gender === selectedGender) : models
                     const cityCount =
                       facetCityCounts?.[city] ??
                       pool.filter((m) => m.city === city && m.country === selectedCountry).length
                     return (
-                      <option key={city} value={`/${genderSlug}/${slugify(selectedCountry)}/${slugify(city)}`}>
+                      <option key={city} value={`${basePath}/${genderSlug}/${slugify(selectedCountry)}/${slugify(city)}`}>
                         {city} ({cityCount})
                       </option>
                     )
@@ -373,8 +374,8 @@ export default function HomeClient({
 
                   const href =
                     selectedCity === city
-                      ? `/${genderSlug}/${slugify(selectedCountry)}`
-                      : `/${genderSlug}/${slugify(selectedCountry)}/${slugify(city)}`
+                      ? `${basePath}/${genderSlug}/${slugify(selectedCountry)}`
+                      : `${basePath}/${genderSlug}/${slugify(selectedCountry)}/${slugify(city)}`
 
                   return (
                     <Link
@@ -416,8 +417,7 @@ export default function HomeClient({
         ) : (
           <section aria-label="Escort listings" className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
             {filteredModels.map((m) => {
-              // Keep ad URLs clean (no ?back=... in the address bar)
-              const href = `/ad/${m.id}`
+              const href = `${basePath}/${genderToSlug(m.gender)}/${slugify(m.country)}/${slugify(m.city)}/${m.id}`
               return (
                 <Link
                   key={m.id}

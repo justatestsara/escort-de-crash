@@ -25,7 +25,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     'header.light': 'Light',
     'header.dark': 'Dark',
-    'header.postAd': 'Post Ad (FREE)',
+    'header.postAd': 'Get Listed (FREE)',
     'header.backToHome': 'Back to Home',
     
     // Post Ad additional
@@ -35,8 +35,8 @@ const translations: Record<Language, Record<string, string>> = {
     'postAd.action': 'Action',
     
     // Filters
-    'filters.girls': 'Girls',
-    'filters.guys': 'Guys',
+    'filters.girls': 'Female',
+    'filters.guys': 'Male',
     'filters.trans': 'Trans',
     'filters.countries': 'Countries',
     'filters.cities': 'Cities',
@@ -137,7 +137,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     'header.light': 'Hell',
     'header.dark': 'Dunkel',
-    'header.postAd': 'Anzeige aufgeben (FREE)',
+    'header.postAd': 'Dein Listing (FREE)',
     'header.backToHome': 'Zurück zur Startseite',
     
     // Post Ad additional
@@ -147,8 +147,8 @@ const translations: Record<Language, Record<string, string>> = {
     'postAd.action': 'Aktion',
     
     // Filters
-    'filters.girls': 'Mädchen',
-    'filters.guys': 'Jungs',
+    'filters.girls': 'Frauen',
+    'filters.guys': 'Männer',
     'filters.trans': 'Trans',
     'filters.countries': 'Länder',
     'filters.cities': 'Städte',

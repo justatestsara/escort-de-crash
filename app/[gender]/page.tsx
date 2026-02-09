@@ -1,16 +1,17 @@
 import type { Metadata } from 'next'
+import { permanentRedirect } from 'next/navigation'
 import HomeClient, { type Gender as HomeGender, type Model } from '../components/HomeClient'
 import { getApprovedAdsForListing } from '../../lib/supabase-ads'
-import { slugToGender } from '../../lib/seo-slugs'
+import { genderToSlug, slugToGender } from '../../lib/seo-slugs'
 
 export const revalidate = 60
 
 function genderLabelEn(g: HomeGender): string {
   switch (g) {
     case 'female':
-      return 'Girls'
+      return 'Female'
     case 'male':
-      return 'Guys'
+      return 'Male'
     case 'trans':
       return 'Trans'
   }
@@ -25,12 +26,13 @@ export async function generateMetadata({ params }: { params: { gender: string } 
 
   const title = 'Featured Models'
   const description = `Browse featured ${genderLabelEn(gender)} escort profiles with photos, rates, and contact information.`
-  const canonical = `/${params.gender}`
+  const canonical = `/escorts/${genderToSlug(gender)}`
 
   return {
     title,
     description,
     alternates: { canonical },
+    robots: { index: false, follow: true },
     openGraph: {
       title,
       description,
@@ -43,6 +45,7 @@ export async function generateMetadata({ params }: { params: { gender: string } 
 export default async function Page({ params }: { params: { gender: string } }) {
   const rawGender = slugToGender(params.gender)
   const gender: HomeGender = rawGender === 'female' || rawGender === 'male' || rawGender === 'trans' ? rawGender : 'female'
+  permanentRedirect(`/escorts/${genderToSlug(gender)}`)
 
   const ads = await getApprovedAdsForListing({
     gender,

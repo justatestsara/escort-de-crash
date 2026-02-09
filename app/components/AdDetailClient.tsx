@@ -8,7 +8,7 @@ import Footer from './Footer'
 import LanguageSwitcher from './LanguageSwitcher'
 import StructuredData from './StructuredData'
 
-export type Gender = 'female' | 'male' | 'trans' | 'luxury_escort' | 'webcam'
+export type Gender = import('../../lib/seo-slugs').Gender
 
 export type AdModel = {
   id: string
@@ -52,10 +52,6 @@ export default function AdDetailClient({ model, backUrl }: { model: AdModel; bac
         return t('filters.guys')
       case 'trans':
         return t('filters.trans')
-      case 'luxury_escort':
-        return t('filters.luxuryEscort')
-      case 'webcam':
-        return t('filters.webcam')
       default:
         return ''
     }

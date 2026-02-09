@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import HomeClient, { type Gender as HomeGender, type Model } from '../../components/HomeClient'
 import { getApprovedAdsForListing } from '../../../lib/supabase-ads'
-import { slugToGender } from '../../../lib/seo-slugs'
+import { genderToSlug, slugToGender } from '../../../lib/seo-slugs'
 
 export const revalidate = 60
 
@@ -25,11 +25,12 @@ export async function generateMetadata({ params }: { params: { gender: string } 
   const rawGender = slugToGender(params.gender)
   if (!isHomeGender(rawGender)) return { title: 'Escorts', robots: { index: false, follow: false } }
   const gender: HomeGender = rawGender
+  const canonicalGenderSlug = genderToSlug(gender)
 
   const label = genderLabelEn(gender)
   const title = `${label} Escorts, ${label} Independent Escorts`
   const description = `Browse ${label} independent escort profiles with photos, rates, and contact information.`
-  const canonical = `/escorts/${params.gender}`
+  const canonical = `/escorts/${canonicalGenderSlug}`
 
   return {
     title,
@@ -43,6 +44,8 @@ export default async function Page({ params }: { params: { gender: string } }) {
   const rawGender = slugToGender(params.gender)
   if (!isHomeGender(rawGender)) notFound()
   const gender: HomeGender = rawGender
+  const canonicalGenderSlug = genderToSlug(gender)
+  if (params.gender !== canonicalGenderSlug) permanentRedirect(`/escorts/${canonicalGenderSlug}`)
 
   const ads = await getApprovedAdsForListing({ gender, limit: 500 })
   const models: Model[] = (ads || []).map((ad: any) => {

@@ -5,8 +5,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        // TEMPORARY: block all crawling while SEO work is in progress
-        disallow: ['/'],
+        allow: '/',
+        // Block sensitive/internal paths
+        disallow: ['/adm2211/', '/api/'],
       },
     ],
     sitemap: 'https://escort.de/sitemap.xml',

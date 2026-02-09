@@ -1,9 +1,7 @@
-export type Gender = 'female' | 'male' | 'trans' | 'luxury_escort' | 'webcam'
+﻿export type Gender = 'female' | 'male' | 'trans'
 
-// New canonical slugs
-export type GenderSlug = 'female' | 'male' | 'trans' | 'luxury' | 'webcam'
-
-export const ESCORTS_BASE = '/escorts'
+// Canonical URL slugs (SEO): /escorts/{female|male|trans}
+export type GenderSlug = 'female' | 'male' | 'trans'
 
 export function genderToSlug(g: Gender): GenderSlug {
   switch (g) {
@@ -13,41 +11,23 @@ export function genderToSlug(g: Gender): GenderSlug {
       return 'male'
     case 'trans':
       return 'trans'
-    case 'luxury_escort':
-      return 'luxury'
-    case 'webcam':
-      return 'webcam'
   }
 }
 
-/**
- * Accept BOTH new and legacy slugs so we can redirect old URLs:
- * - /girls -> /escorts/female
- * - /guys  -> /escorts/male
- * - /luxury-high-end -> /escorts/luxury
- */
 export function slugToGender(slug: string): Gender | null {
   switch (slug) {
-    // new
+    // Canonical
     case 'female':
       return 'female'
     case 'male':
       return 'male'
     case 'trans':
       return 'trans'
-    case 'luxury':
-      return 'luxury_escort'
-    case 'webcam':
-      return 'webcam'
-
-    // legacy
+    // Legacy (keep working via redirects)
     case 'girls':
       return 'female'
     case 'guys':
       return 'male'
-    case 'luxury-high-end':
-      return 'luxury_escort'
-
     default:
       return null
   }
@@ -67,7 +47,10 @@ export function slugify(input: string): string {
 }
 
 export function unslugifyTitle(input: string): string {
-  const s = input.trim().replace(/-/g, ' ').replace(/\s+/g, ' ')
+  const s = input
+    .trim()
+    .replace(/-/g, ' ')
+    .replace(/\s+/g, ' ')
   return s.replace(/\b\p{L}/gu, (c) => c.toUpperCase())
 }
 
@@ -75,8 +58,8 @@ export function buildLandingPath(opts: { gender?: Gender | ''; country?: string;
   const { gender, country, city } = opts
   if (!gender) return '/'
   const g = genderToSlug(gender)
-  if (!country) return `${ESCORTS_BASE}/${g}`
+  if (!country) return `/escorts/${g}`
   const c = slugify(country)
-  if (!city) return `${ESCORTS_BASE}/${g}/${c}`
-  return `${ESCORTS_BASE}/${g}/${c}/${slugify(city)}`
+  if (!city) return `/escorts/${g}/${c}`
+  return `/escorts/${g}/${c}/${slugify(city)}`
 }

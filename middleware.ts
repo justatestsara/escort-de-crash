@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const GENDER_SLUGS = new Set(['female', 'male', 'trans', 'luxury', 'webcam'])
+const CANONICAL_GENDER_SLUGS = new Set(['female', 'male', 'trans'])
+const LEGACY_GENDER_SLUGS: Record<string, string> = {
+  girls: 'female',
+  guys: 'male',
+}
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -15,7 +19,16 @@ export function middleware(req: NextRequest) {
   if (parts.length < 2) return NextResponse.next()
 
   const first = parts[1]
-  if (GENDER_SLUGS.has(first)) return NextResponse.next()
+
+  // Redirect legacy gender slugs to canonical ones
+  const legacyMapped = LEGACY_GENDER_SLUGS[first]
+  if (legacyMapped) {
+    const url = req.nextUrl.clone()
+    url.pathname = `/${parts[0]}/${legacyMapped}/${parts.slice(2).join('/')}`.replace(/\/$/, '')
+    return NextResponse.redirect(url, 308)
+  }
+
+  if (CANONICAL_GENDER_SLUGS.has(first)) return NextResponse.next()
 
   const dest = `/escorts/female/${parts.slice(1).join('/')}`
   const url = req.nextUrl.clone()
