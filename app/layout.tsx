@@ -1,22 +1,7 @@
 ﻿import type { Metadata } from 'next'
 import Script from 'next/script'
-import { Montserrat, Open_Sans } from 'next/font/google'
 import { ThemeProvider, LanguageProvider } from './providers'
 import './globals.css'
-
-// Geometric sans-serif for headings
-const montserrat = Montserrat({
-  subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  variable: '--font-header',
-})
-
-// Humanist/neo-grotesque sans-serif for body text
-const openSans = Open_Sans({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-body',
-})
 
 export const metadata: Metadata = {
   title: {
@@ -79,7 +64,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="de" className={`${montserrat.variable} ${openSans.variable}`}>
+    <html lang="de" className="dark">
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />

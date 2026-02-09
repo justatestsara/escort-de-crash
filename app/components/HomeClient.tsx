@@ -53,11 +53,13 @@ export default function HomeClient({
   initialFilters,
   facetCities,
   facetCityCounts,
+  h1,
 }: {
   initialModels: Model[]
   initialFilters: InitialFilters
   facetCities?: string[]
   facetCityCounts?: Record<string, number>
+  h1?: string
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -126,6 +128,8 @@ export default function HomeClient({
     if (selectedGender) return 'Featured Models'
     return ''
   }, [selectedCity, selectedCountry, selectedGender, t])
+
+  const headingText = h1 ?? seoHeading
 
   const genderLabelForBreadcrumb = useMemo(() => {
     if (!selectedGender) return ''
@@ -401,8 +405,8 @@ export default function HomeClient({
       </nav>
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        {seoHeading ? (
-          <h1 className="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-center text-[var(--text-primary)] transition-colors">{seoHeading}</h1>
+        {headingText ? (
+          <h1 className="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-center text-[var(--text-primary)] transition-colors">{headingText}</h1>
         ) : null}
 
         {filteredModels.length === 0 ? (
