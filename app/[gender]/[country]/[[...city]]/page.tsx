@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import HomeClient, { type Model } from '../../../components/HomeClient'
+import HomeClient, { type Gender as HomeGender, type Model } from '../../../components/HomeClient'
 import { getApprovedAdsForListing, getApprovedCityFacets } from '../../../../lib/supabase-ads'
 import { slugToGender, slugify, unslugifyTitle } from '../../../../lib/seo-slugs'
 
@@ -24,8 +24,12 @@ export async function generateMetadata({
 }: {
   params: { gender: string; country: string; city?: string[] }
 }): Promise<Metadata> {
-  const gender = slugToGender(params.gender)
-  if (!gender) return { title: 'Featured Models', robots: { index: false, follow: false } }
+  const rawGender = slugToGender(params.gender)
+  // Guard against legacy/unsupported genders (e.g. "webcam") that may exist in older branches.
+  if (rawGender !== 'female' && rawGender !== 'male' && rawGender !== 'trans') {
+    return { title: 'Featured Models', robots: { index: false, follow: false } }
+  }
+  const gender: HomeGender = rawGender
 
   const country = unslugifyTitle(params.country)
   const city = params.city?.length ? unslugifyTitle(params.city.join('-')) : ''
@@ -53,8 +57,10 @@ export default async function Page({
 }: {
   params: { gender: string; country: string; city?: string[] }
 }) {
-  const gender = slugToGender(params.gender)
-  if (!gender) notFound()
+  const rawGender = slugToGender(params.gender)
+  // Guard against legacy/unsupported genders (e.g. "webcam") that may exist in older branches.
+  if (rawGender !== 'female' && rawGender !== 'male' && rawGender !== 'trans') notFound()
+  const gender: HomeGender = rawGender
 
   const country = unslugifyTitle(params.country)
   const requestedCitySlug = (params.city?.length ? params.city.join('-') : '').trim().toLowerCase()
