@@ -34,6 +34,10 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL('https://escort.de'),
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/apple-touch-icon.svg', type: 'image/svg+xml' }],
+  },
   openGraph: {
     type: 'website',
     locale: 'de_DE',
@@ -77,11 +81,13 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${montserrat.variable} ${openSans.variable}`}>
       <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
         <Script
           defer
           src="https://cloud.umami.is/script.js"
           data-website-id="7ce2a2a1-1c8f-4391-8993-14b027d37878"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
       </head>
       <body>

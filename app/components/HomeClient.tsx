@@ -51,9 +51,13 @@ function normalizeGender(v: string | null): Gender | '' {
 export default function HomeClient({
   initialModels,
   initialFilters,
+  facetCities,
+  facetCityCounts,
 }: {
   initialModels: Model[]
   initialFilters: InitialFilters
+  facetCities?: string[]
+  facetCityCounts?: Record<string, number>
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -81,9 +85,10 @@ export default function HomeClient({
 
   const availableCities = useMemo(() => {
     if (!selectedCountry) return []
+    if (facetCities && facetCities.length > 0) return [...facetCities].sort()
     const pool = selectedGender ? models.filter((m) => m.gender === selectedGender) : models
     return Array.from(new Set(pool.filter((m) => m.country === selectedCountry).map((m) => m.city))).sort()
-  }, [models, selectedGender, selectedCountry])
+  }, [models, selectedGender, selectedCountry, facetCities])
 
   const filteredModels = useMemo(() => {
     let filtered = [...models]
@@ -340,7 +345,9 @@ export default function HomeClient({
                   <option value={`/${genderSlug}/${slugify(selectedCountry)}`}>All cities</option>
                   {availableCities.map((city) => {
                     const pool = selectedGender ? models.filter((m) => m.gender === selectedGender) : models
-                    const cityCount = pool.filter((m) => m.city === city && m.country === selectedCountry).length
+                    const cityCount =
+                      facetCityCounts?.[city] ??
+                      pool.filter((m) => m.city === city && m.country === selectedCountry).length
                     return (
                       <option key={city} value={`/${genderSlug}/${slugify(selectedCountry)}/${slugify(city)}`}>
                         {city} ({cityCount})
@@ -354,7 +361,9 @@ export default function HomeClient({
               <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                 {availableCities.map((city) => {
                   const pool = selectedGender ? models.filter((m) => m.gender === selectedGender) : models
-                  const cityCount = pool.filter((m) => m.city === city && m.country === selectedCountry).length
+                  const cityCount =
+                    facetCityCounts?.[city] ??
+                    pool.filter((m) => m.city === city && m.country === selectedCountry).length
                   const code = countryCodeMap[selectedCountry] || 'un'
                   const flagUrl = `https://flagcdn.com/w20/${code}.png`
 

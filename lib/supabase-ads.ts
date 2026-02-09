@@ -2,14 +2,10 @@ import { supabase } from './supabase'
 
 export interface Ad {
   id: string
-  /**
-   * Optional numeric public ID for SEO-friendly URLs.
-   * Add it in Supabase via SQL migration (see tools/add_public_id_to_ads.sql).
-   */
   public_id?: number | null
   name: string
   age: string | number
-  gender: 'female' | 'male' | 'trans' | 'luxury_escort' | 'webcam'
+  gender: 'female' | 'male' | 'trans'
   city: string
   country: string
   phone: string
@@ -26,6 +22,10 @@ export interface Ad {
   images?: string[]
   status: 'pending' | 'approved' | 'inactive'
   submittedAt: string
+}
+
+function isAllowedGender(g: unknown): g is Ad['gender'] {
+  return g === 'female' || g === 'male' || g === 'trans'
 }
 
 export interface ContactSubmission {
@@ -49,7 +49,8 @@ export async function getAllAds(): Promise<Ad[]> {
     return []
   }
   
-  return data || []
+  const rows = (data || []) as any[]
+  return rows.filter((r) => isAllowedGender(r?.gender))
 }
 
 export async function getApprovedAds(): Promise<Ad[]> {
@@ -64,7 +65,104 @@ export async function getApprovedAds(): Promise<Ad[]> {
     return []
   }
   
-  return data || []
+  const rows = (data || []) as any[]
+  return rows.filter((r) => isAllowedGender(r?.gender))
+}
+
+type ApprovedListingFilters = {
+  gender?: Ad['gender']
+  country?: string
+  city?: string
+  limit?: number
+}
+
+/**
+ * Lightweight query for listing pages (home / gender / country / city).
+ * Avoids `select('*')` and supports filtering so pages don't fetch all ads.
+ */
+export async function getApprovedAdsForListing(filters: ApprovedListingFilters = {}): Promise<Pick<
+  Ad,
+  'id' | 'name' | 'age' | 'gender' | 'city' | 'country' | 'images' | 'description' | 'submittedAt'
+>[]> {
+  let q = supabase
+    .from('ads')
+    .select('id,name,age,gender,city,country,images,description,submittedAt')
+    .eq('status', 'approved')
+    .order('submittedAt', { ascending: false })
+
+  if (filters.gender) q = q.eq('gender', filters.gender)
+  // Use case-insensitive matching for location to be resilient to capitalization differences.
+  // Also allow trailing whitespace in stored values (use a "starts with" pattern).
+  const country = (filters.country || '').trim()
+  const city = (filters.city || '').trim()
+  if (country) q = q.ilike('country', `${country}%`)
+  if (city) q = q.ilike('city', `${city}%`)
+  if (filters.limit) q = q.limit(filters.limit)
+
+  const { data, error } = await q
+
+  if (error) {
+    console.error('Error fetching approved ads for listing:', error)
+    return []
+  }
+
+  const rows = (data || []) as any[]
+  return rows.filter((r) => isAllowedGender(r?.gender))
+}
+
+type ApprovedLocationFacetFilters = {
+  gender: Ad['gender']
+  country: string
+  limit?: number
+}
+
+/**
+ * Lightweight location facets for navigation (e.g. show all cities in a country)
+ * without loading full ad payloads.
+ */
+export async function getApprovedCityFacets(filters: ApprovedLocationFacetFilters): Promise<Array<{ city: string }>> {
+  const country = (filters.country || '').trim()
+
+  let q = supabase
+    .from('ads')
+    .select('city')
+    .eq('status', 'approved')
+    .eq('gender', filters.gender)
+    .order('submittedAt', { ascending: false })
+
+  // Allow trailing whitespace in stored values.
+  if (country) q = q.ilike('country', `${country}%`)
+  if (filters.limit) q = q.limit(filters.limit)
+
+  const { data, error } = await q
+
+  if (error) {
+    console.error('Error fetching approved city facets:', error)
+    return []
+  }
+
+  return ((data || []) as any[])
+    .map((r) => ({ city: String(r?.city || '').trim() }))
+    .filter((r) => r.city.length > 0)
+}
+
+/**
+ * Minimal query for sitemap generation.
+ */
+export async function getApprovedAdsForSitemap(): Promise<Pick<Ad, 'id' | 'submittedAt' | 'gender' | 'country' | 'city'>[]> {
+  const { data, error } = await supabase
+    .from('ads')
+    .select('id,submittedAt,gender,country,city')
+    .eq('status', 'approved')
+    .order('submittedAt', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching approved ads for sitemap:', error)
+    return []
+  }
+
+  const rows = (data || []) as any[]
+  return rows.filter((r) => isAllowedGender(r?.gender))
 }
 
 export async function getAdById(id: string): Promise<Ad | null> {
@@ -80,33 +178,44 @@ export async function getAdById(id: string): Promise<Ad | null> {
     return null
   }
   
-  return data
+  if (!data) return null
+  if (!isAllowedGender((data as any)?.gender)) return null
+  return data as any
 }
 
-export async function getAdByPublicId(publicId: number): Promise<Ad | null> {
-  const { data, error } = await supabase
-    .from('ads')
-    .select('*')
-    .eq('public_id', publicId)
-    .eq('status', 'approved')
-    .single()
-
-  if (error) {
-    console.error('Error fetching ad by public_id:', error)
-    return null
-  }
-
-  return data
-}
-
+/**
+ * Fetch an approved ad by either internal `id` or numeric `public_id`.
+ * - If `identifier` is numeric (e.g. "12345"), we try `public_id` first.
+ * - Otherwise we fetch by `id`.
+ *
+ * This keeps legacy routes and canonical routes working while URLs migrate.
+ */
 export async function getAdByIdentifier(identifier: string): Promise<Ad | null> {
-  const s = String(identifier || '').trim()
-  if (/^\d+$/.test(s)) {
-    // numeric ID -> public_id
-    const n = Number(s)
-    if (Number.isFinite(n)) return await getAdByPublicId(n)
+  const raw = (identifier || '').trim()
+  if (!raw) return null
+
+  const isNumeric = /^\d+$/.test(raw)
+
+  if (isNumeric) {
+    const publicId = Number(raw)
+    if (Number.isFinite(publicId)) {
+      try {
+        const { data, error } = await supabase
+          .from('ads')
+          .select('*')
+          .eq('public_id', publicId)
+          .eq('status', 'approved')
+          .single()
+
+        if (!error && data && isAllowedGender((data as any)?.gender)) return data as any
+      } catch (e) {
+        // If the column doesn't exist (older schema), fall back to id lookup.
+        console.warn('getAdByIdentifier: public_id lookup failed, falling back to id', e)
+      }
+    }
   }
-  return await getAdById(s)
+
+  return await getAdById(raw)
 }
 
 export async function createAd(ad: Omit<Ad, 'submittedAt'> | Ad): Promise<Ad | null> {

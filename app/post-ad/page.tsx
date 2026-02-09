@@ -94,12 +94,11 @@ async function uploadWebpToSupabaseStorage(blob: Blob): Promise<string> {
 export default function PostAd() {
   const { theme, toggleTheme } = useTheme()
   const { t } = useLanguage()
-  const whatsappHref = 'https://wa.me/359898886887'
 
   const [formData, setFormData] = useState({
     name: '',
     age: '',
-    gender: 'female' as 'female' | 'male' | 'trans' | 'luxury_escort' | 'webcam',
+    gender: 'female' as 'female' | 'male' | 'trans',
     city: '',
     country: '',
     phone: '',
@@ -329,17 +328,8 @@ export default function PostAd() {
 
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-3xl font-light mb-8 text-[var(--text-primary)] transition-colors">{t('postAd.title')}</h1>
-        <div className="-mt-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <p className="text-sm text-[var(--text-secondary)] transition-colors">{t('postAd.whatsappCta')}</p>
-          <a
-            href={whatsappHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors w-full sm:w-auto"
-            aria-label="Contact us on WhatsApp"
-          >
-            <span className="font-semibold">{t('postAd.whatsappButton')}</span>
-          </a>
+        <div className="border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-4 mb-8 text-sm text-[var(--text-secondary)] transition-colors">
+          {t('postAd.noAgencyBanner')}
         </div>
 
         {submitted ? (
@@ -371,7 +361,7 @@ export default function PostAd() {
                           onClick={() => removeImage(index)}
                           className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          ×
+                          x
                         </button>
                         <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">{index + 1}</div>
                       </div>
@@ -390,7 +380,7 @@ export default function PostAd() {
 
                   {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
                   {imageUploadError && <p className="text-red-500 text-xs mt-2">{imageUploadError}</p>}
-                  {isUploadingImages && <p className="text-xs text-[var(--text-tertiary)] mt-2">Uploading & converting images…</p>}
+                  {isUploadingImages && <p className="text-xs text-[var(--text-tertiary)] mt-2">Uploading & converting images...</p>}
 
                   <p className="text-xs text-[var(--text-tertiary)] mt-2">
                     {imagePreviews.length}/3 minimum ({imagePreviews.length}/10 maximum)
@@ -447,8 +437,6 @@ export default function PostAd() {
                       <option value="female">{t('postAd.gender.female')}</option>
                       <option value="male">{t('postAd.gender.male')}</option>
                       <option value="trans">{t('postAd.gender.trans')}</option>
-                      <option value="luxury_escort">{t('postAd.gender.luxuryEscort')}</option>
-                      <option value="webcam">{t('postAd.gender.webcam')}</option>
                     </select>
                   </div>
 
@@ -613,7 +601,7 @@ export default function PostAd() {
                         <div className="flex items-center gap-3">
                           <span className="text-[var(--text-primary)]">{service.name}</span>
                           <span className={`text-xs px-2 py-1 ${service.included ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500'}`}>
-                            {service.included ? t('postAd.included') : `${t('postAd.extra')}: €${service.extraPrice || 0}`}
+                            {service.included ? t('postAd.included') : `${t('postAd.extra')}: EUR ${service.extraPrice || 0}`}
                           </span>
                         </div>
                         <button type="button" onClick={() => removeService(index)} className="text-red-500 hover:text-red-600 transition-colors">
@@ -638,7 +626,7 @@ export default function PostAd() {
                   </label>
                   <input
                     type="number"
-                    placeholder={`${t('postAd.extra')} (€)`}
+                    placeholder={`${t('postAd.extra')} (EUR)`}
                     value={newService.extraPrice}
                     onChange={(e) => setNewService({ ...newService, extraPrice: e.target.value })}
                     disabled={newService.included}
@@ -660,8 +648,8 @@ export default function PostAd() {
                       <thead>
                         <tr className="bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] transition-colors">
                           <th className="py-3 px-4 text-left text-[var(--text-primary)] font-medium transition-colors">{t('postAd.time')}</th>
-                          <th className="py-3 px-4 text-center text-[var(--text-primary)] font-medium transition-colors">{t('postAd.incall')} (€)</th>
-                          <th className="py-3 px-4 text-center text-[var(--text-primary)] font-medium transition-colors">{t('postAd.outcall')} (€)</th>
+                          <th className="py-3 px-4 text-center text-[var(--text-primary)] font-medium transition-colors">{t('postAd.incall')} (EUR)</th>
+                          <th className="py-3 px-4 text-center text-[var(--text-primary)] font-medium transition-colors">{t('postAd.outcall')} (EUR)</th>
                           <th className="py-3 px-4 text-center text-[var(--text-primary)] font-medium transition-colors">{t('postAd.action')}</th>
                         </tr>
                       </thead>
@@ -669,8 +657,8 @@ export default function PostAd() {
                         {formData.rates.map((rate, index) => (
                           <tr key={index} className="border-b border-[var(--border-primary)] hover:bg-[var(--bg-secondary)] transition-colors">
                             <td className="py-3 px-4 text-[var(--text-primary)] transition-colors">{rate.time}</td>
-                            <td className="py-3 px-4 text-center text-[var(--text-primary)] transition-colors">€{rate.incall}</td>
-                            <td className="py-3 px-4 text-center text-[var(--text-primary)] transition-colors">€{rate.outcall}</td>
+                            <td className="py-3 px-4 text-center text-[var(--text-primary)] transition-colors">EUR {rate.incall}</td>
+                            <td className="py-3 px-4 text-center text-[var(--text-primary)] transition-colors">EUR {rate.outcall}</td>
                             <td className="py-3 px-4 text-center">
                               <button type="button" onClick={() => removeRate(index)} className="text-red-500 hover:text-red-600 transition-colors">
                                 {t('postAd.remove')}
@@ -693,14 +681,14 @@ export default function PostAd() {
                   />
                   <input
                     type="number"
-                    placeholder="Incall (€)"
+                    placeholder="Incall (EUR)"
                     value={newRate.incall}
                     onChange={(e) => setNewRate({ ...newRate, incall: e.target.value })}
                     className="px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] focus:outline-none focus:border-[var(--accent-pink)] text-[var(--text-primary)] transition-colors"
                   />
                   <input
                     type="number"
-                    placeholder="Outcall (€)"
+                    placeholder="Outcall (EUR)"
                     value={newRate.outcall}
                     onChange={(e) => setNewRate({ ...newRate, outcall: e.target.value })}
                     className="px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border-primary)] focus:outline-none focus:border-[var(--accent-pink)] text-[var(--text-primary)] transition-colors"
@@ -716,7 +704,7 @@ export default function PostAd() {
                 disabled={isSubmitting || isUploadingImages}
                 className="w-full px-6 py-3 bg-[var(--accent-pink)] text-white hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isUploadingImages ? 'Uploading images…' : isSubmitting ? 'Submitting…' : t('postAd.submit')}
+                {isUploadingImages ? 'Uploading images...' : isSubmitting ? 'Submitting...' : t('postAd.submit')}
               </button>
             </form>
           </>

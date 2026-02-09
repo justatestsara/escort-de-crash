@@ -1,9 +1,9 @@
 ﻿import type { Metadata } from 'next'
 import HomeClient, { type Gender, type Model } from './components/HomeClient'
-import { getApprovedAds } from '../lib/supabase-ads'
+import { getApprovedAdsForListing } from '../lib/supabase-ads'
 
-export const dynamic = 'force-dynamic'
-export const fetchCache = 'force-no-store'
+// Cache rendered HTML briefly to avoid hammering Supabase and to keep TTFB stable.
+export const revalidate = 60
 
 type SearchParams = Record<string, string | string[] | undefined>
 
@@ -13,22 +13,20 @@ function first(v: string | string[] | undefined): string {
 }
 
 function normalizeGender(v: string): Gender | '' {
-  if (v === 'female' || v === 'male' || v === 'trans' || v === 'luxury_escort' || v === 'webcam') return v
+  if (v === 'female' || v === 'male' || v === 'trans') return v
   return ''
 }
 
 function genderLabelEn(g: Gender): string {
   switch (g) {
     case 'female':
-      return 'Female'
+      return 'Girls'
     case 'male':
-      return 'Male'
+      return 'Guys'
     case 'trans':
       return 'Trans'
-    case 'luxury_escort':
-      return 'Luxury/High End'
-    case 'webcam':
-      return 'Webcam'
+    default:
+      return 'Girls'
   }
 }
 
@@ -54,15 +52,13 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   const country = first(searchParams.country)
   const city = first(searchParams.city)
 
-  const placeShort = city || country
-  const placeLong = city && country ? `${city}, ${country}` : (city || country)
+  const location = city || country
   const canonical = buildCanonical(searchParams)
 
-  const label = genderLabelEn(gender)
-  const title = placeShort ? `${placeShort} Escorts, ${label} Independent Escorts in ${placeLong}` : `${label} Escorts, ${label} Independent Escorts`
-  const description = placeShort
-    ? `Browse ${label} independent escorts in ${placeLong}. Verified profiles with photos, rates, and contact information.`
-    : `Browse ${label} independent escort profiles with photos, rates, and contact information.`
+  const title = location ? `${genderLabelEn(gender)} Escorts ${location}` : 'Featured Models'
+  const description = location
+    ? `Browse ${genderLabelEn(gender)} escorts in ${location}. Verified profiles with photos, rates, and contact information.`
+    : 'Browse featured escort profiles with photos, rates, and contact information.'
 
   return {
     title,
@@ -73,32 +69,37 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
 }
 
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
-  const ads = await getApprovedAds()
+  const gender = getDefaultGender(searchParams)
+  const country = first(searchParams.country)
+  const city = first(searchParams.city)
+
+  const ads = await getApprovedAdsForListing({
+    gender,
+    country: country || undefined,
+    city: city || undefined,
+    limit: 500,
+  })
 
   const models: Model[] = (ads || []).map((ad: any) => {
     const fallbackImage = 'https://i.ibb.co/GQPtQvJB/image.jpg'
     const images = ad.images && ad.images.length > 0 ? ad.images : [fallbackImage]
 
     return {
-      // Use numeric public_id for SEO URLs when available, otherwise fall back to internal id
-      id: String(ad.public_id ?? ad.id),
+      id: ad.id,
       name: ad.name,
       age: typeof ad.age === 'string' ? parseInt(ad.age, 10) : ad.age,
       gender: ad.gender,
-      city: ad.city,
-      country: ad.country,
+      city: (ad.city || '').trim(),
+      country: (ad.country || '').trim(),
       image: images[0],
       images,
       description: ad.description,
     }
   })
 
-  const initialGender = getDefaultGender(searchParams)
-  const initialCountry = first(searchParams.country)
-  const initialCity = first(searchParams.city)
+  const initialGender = gender
+  const initialCountry = country
+  const initialCity = city
 
-
-  const h1 = initialCity && initialCountry ? `${genderLabelEn(initialGender)} Escorts in ${initialCity}, ${initialCountry}` : initialCountry ? `${genderLabelEn(initialGender)} Escorts in ${initialCountry}` : `${genderLabelEn(initialGender)} Escorts`
-
-  return <HomeClient initialModels={models} initialFilters={{ gender: initialGender, country: initialCountry, city: initialCity }} h1={h1} />
+  return <HomeClient initialModels={models} initialFilters={{ gender: initialGender, country: initialCountry, city: initialCity }} />
 }
