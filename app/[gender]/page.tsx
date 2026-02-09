@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import HomeClient, { type Model } from '../components/HomeClient'
+import HomeClient, { type Gender as HomeGender, type Model } from '../components/HomeClient'
 import { getApprovedAdsForListing } from '../../lib/supabase-ads'
 import { slugToGender } from '../../lib/seo-slugs'
 
 export const revalidate = 60
 
-function genderLabelEn(g: NonNullable<ReturnType<typeof slugToGender>>): string {
+function genderLabelEn(g: HomeGender): string {
   switch (g) {
     case 'female':
       return 'Girls'
@@ -13,16 +13,15 @@ function genderLabelEn(g: NonNullable<ReturnType<typeof slugToGender>>): string 
       return 'Guys'
     case 'trans':
       return 'Trans'
-    default:
-      return 'Girls'
   }
 }
 
 export async function generateMetadata({ params }: { params: { gender: string } }): Promise<Metadata> {
-  const gender = slugToGender(params.gender)
-  if (!gender) {
+  const rawGender = slugToGender(params.gender)
+  if (rawGender !== 'female' && rawGender !== 'male' && rawGender !== 'trans') {
     return { title: 'Featured Models', robots: { index: false, follow: false } }
   }
+  const gender: HomeGender = rawGender
 
   const title = 'Featured Models'
   const description = `Browse featured ${genderLabelEn(gender)} escort profiles with photos, rates, and contact information.`
@@ -42,10 +41,11 @@ export async function generateMetadata({ params }: { params: { gender: string } 
 }
 
 export default async function Page({ params }: { params: { gender: string } }) {
-  const gender = slugToGender(params.gender)
+  const rawGender = slugToGender(params.gender)
+  const gender: HomeGender = rawGender === 'female' || rawGender === 'male' || rawGender === 'trans' ? rawGender : 'female'
 
   const ads = await getApprovedAdsForListing({
-    gender: gender || undefined,
+    gender,
     limit: 500,
   })
   const models: Model[] = (ads || []).map((ad: any) => {
@@ -65,5 +65,5 @@ export default async function Page({ params }: { params: { gender: string } }) {
     }
   })
 
-  return <HomeClient initialModels={models} initialFilters={{ gender: gender || 'female', country: '', city: '' }} />
+  return <HomeClient initialModels={models} initialFilters={{ gender, country: '', city: '' }} />
 }
