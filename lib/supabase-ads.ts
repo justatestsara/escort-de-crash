@@ -70,7 +70,7 @@ export async function getApprovedAds(): Promise<Ad[]> {
 }
 
 type ApprovedListingFilters = {
-  gender?: Ad['gender']
+  gender?: string
   country?: string
   city?: string
   limit?: number
