@@ -17,6 +17,9 @@ function genderLabelEn(g: Gender): string {
       return 'Male'
     case 'trans':
       return 'Trans'
+    default:
+      // In case older/unsupported gender values exist in types, fall back to a safe label.
+      return 'Escort'
   }
 }
 
