@@ -4,8 +4,7 @@ import AdDetailClient, { type AdModel, type Gender } from '../../../../../compon
 import { getAdByIdentifier } from '../../../../../../lib/supabase-ads'
 import { buildLandingPath, genderToSlug, slugify } from '../../../../../../lib/seo-slugs'
 
-export const dynamic = 'force-dynamic'
-export const fetchCache = 'force-no-store'
+export const revalidate = 300
 
 type Params = { gender: string; country: string; city: string; id: string }
 type SearchParams = { back?: string }
@@ -18,10 +17,6 @@ function genderLabelEn(g: Gender): string {
       return 'Male'
     case 'trans':
       return 'Trans'
-    case 'luxury_escort':
-      return 'Luxury/High End'
-    case 'webcam':
-      return 'Webcam'
   }
 }
 

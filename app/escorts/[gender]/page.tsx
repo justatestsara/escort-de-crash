@@ -1,12 +1,16 @@
 import type { Metadata } from 'next'
-import HomeClient, { type Model } from '../../components/HomeClient'
-import { getApprovedAds } from '../../../lib/supabase-ads'
+import { notFound } from 'next/navigation'
+import HomeClient, { type Gender as HomeGender, type Model } from '../../components/HomeClient'
+import { getApprovedAdsForListing } from '../../../lib/supabase-ads'
 import { slugToGender } from '../../../lib/seo-slugs'
 
-export const dynamic = 'force-dynamic'
-export const fetchCache = 'force-no-store'
+export const revalidate = 60
 
-function genderLabelEn(g: NonNullable<ReturnType<typeof slugToGender>>): string {
+function isHomeGender(g: unknown): g is HomeGender {
+  return g === 'female' || g === 'male' || g === 'trans'
+}
+
+function genderLabelEn(g: HomeGender): string {
   switch (g) {
     case 'female':
       return 'Female'
@@ -14,16 +18,13 @@ function genderLabelEn(g: NonNullable<ReturnType<typeof slugToGender>>): string 
       return 'Male'
     case 'trans':
       return 'Trans'
-    case 'luxury_escort':
-      return 'Luxury'
-    case 'webcam':
-      return 'Webcam'
   }
 }
 
 export async function generateMetadata({ params }: { params: { gender: string } }): Promise<Metadata> {
-  const gender = slugToGender(params.gender)
-  if (!gender) return { title: 'Escorts', robots: { index: false, follow: false } }
+  const rawGender = slugToGender(params.gender)
+  if (!isHomeGender(rawGender)) return { title: 'Escorts', robots: { index: false, follow: false } }
+  const gender: HomeGender = rawGender
 
   const label = genderLabelEn(gender)
   const title = `${label} Escorts, ${label} Independent Escorts`
@@ -39,9 +40,11 @@ export async function generateMetadata({ params }: { params: { gender: string } 
 }
 
 export default async function Page({ params }: { params: { gender: string } }) {
-  const gender = slugToGender(params.gender)
+  const rawGender = slugToGender(params.gender)
+  if (!isHomeGender(rawGender)) notFound()
+  const gender: HomeGender = rawGender
 
-  const ads = await getApprovedAds()
+  const ads = await getApprovedAdsForListing({ gender, limit: 500 })
   const models: Model[] = (ads || []).map((ad: any) => {
     const fallbackImage = 'https://i.ibb.co/GQPtQvJB/image.jpg'
     const images = ad.images && ad.images.length > 0 ? ad.images : [fallbackImage]
@@ -59,5 +62,5 @@ export default async function Page({ params }: { params: { gender: string } }) {
     }
   })
 
-  return <HomeClient initialModels={models} initialFilters={{ gender: gender || 'female', country: '', city: '' }} h1={`${genderLabelEn(gender || 'female')} Escorts`} />
+  return <HomeClient initialModels={models} initialFilters={{ gender, country: '', city: '' }} h1={`${genderLabelEn(gender)} Escorts`} />
 }
