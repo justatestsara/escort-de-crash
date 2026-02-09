@@ -111,7 +111,7 @@ export async function getApprovedAdsForListing(filters: ApprovedListingFilters =
 }
 
 type ApprovedLocationFacetFilters = {
-  gender: Ad['gender']
+  gender: string
   country: string
   limit?: number
 }
